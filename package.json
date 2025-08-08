@@ -1,4 +1,9 @@
 {
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.54.0",
     "bcrypt": "^6.0.0",

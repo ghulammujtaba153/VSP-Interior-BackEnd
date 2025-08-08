@@ -5,6 +5,8 @@ import userRouter from "./user.module/user.routes.js";
 import resourceRouter from "./user.module/resource.routes.js";
 import clientRouter from "./client.module/client.routes.js";
 import contactRouter from "./client.module/contact.routes.js";
+import suppliersRouter from "./suppliers.module.js/suppliers.routes.js";
+import supplierContactsRouter from "./suppliers.module.js/supplierContacts.routes.js";
 
 
 const router = express.Router();
@@ -15,5 +17,7 @@ router.use('/user', userRouter);
 router.use('/resource', resourceRouter);
 router.use('/client', clientRouter);
 router.use('/contact', contactRouter);
+router.use('/suppliers', suppliersRouter);
+router.use('/supplier-contacts', supplierContactsRouter);
 
 export default router;

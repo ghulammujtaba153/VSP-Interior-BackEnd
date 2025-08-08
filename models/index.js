@@ -8,6 +8,8 @@ import PermissionModel from './permission.model.js';
 import ResourceModel from './resource.model.js';
 import ClientModel from './client.model.js';
 import ContactModel from './contact.model.js';
+import SupplierModel from './suppliers.model.js';
+import SupplierContactModel from './supplierContact.model.js';
 
 dotenv.config();
 
@@ -31,6 +33,8 @@ const Permission = PermissionModel(sequelize, Sequelize.DataTypes);
 const Resource = ResourceModel(sequelize, Sequelize.DataTypes);
 const Clients = ClientModel(sequelize, Sequelize.DataTypes);
 const Contacts = ContactModel(sequelize, Sequelize.DataTypes);
+const Suppliers = SupplierModel(sequelize, Sequelize.DataTypes);
+const SupplierContacts = SupplierContactModel(sequelize, Sequelize.DataTypes);
 
 // Prepare DB object
 const db = {
@@ -40,6 +44,8 @@ const db = {
   Resource,
   Clients,
   Contacts,
+  Suppliers,
+  SupplierContacts,
   sequelize,
   Sequelize,
 };

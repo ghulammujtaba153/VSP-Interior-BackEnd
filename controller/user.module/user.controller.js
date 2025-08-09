@@ -27,7 +27,7 @@ export const createUser = async (req, res) => {
       const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '2d' });
   
       // Send password reset email
-      const resetLink = `http://localhost:3000/reset-password?token=${token}`;
+      const resetLink = `https://vps-interior-front-end-ten.vercel.app/reset-password?token=${token}`;
       const emailHTML = `
         <p>Hello ${name},</p>
         <p>Your account has been created. Click below to set your password:</p>

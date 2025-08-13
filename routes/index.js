@@ -7,7 +7,8 @@ import clientRouter from "./client.module/client.routes.js";
 import contactRouter from "./client.module/contact.routes.js";
 import suppliersRouter from "./suppliers.module.js/suppliers.routes.js";
 import supplierContactsRouter from "./suppliers.module.js/supplierContacts.routes.js";
-
+import inventoryRouter from "./inventory.module/inventory.routes.js";
+import cabinetRouter from "./cabinet.module/cabinet.routes.js";
 
 const router = express.Router();
 
@@ -19,5 +20,7 @@ router.use('/client', clientRouter);
 router.use('/contact', contactRouter);
 router.use('/suppliers', suppliersRouter);
 router.use('/supplier-contacts', supplierContactsRouter);
+router.use('/inventory', inventoryRouter);
+router.use('/cabinet', cabinetRouter);
 
 export default router;

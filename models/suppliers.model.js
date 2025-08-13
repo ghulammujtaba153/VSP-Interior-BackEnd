@@ -38,11 +38,17 @@ export default (sequelize, DataTypes) => {
 
     Supplier.associate = (models) => {
         Supplier.hasMany(models.SupplierContacts, {
-                foreignKey: 'supplierId',
-                sourceKey: 'id',
-                as: 'contacts',
-                onDelete: 'CASCADE'
-            });
+            foreignKey: 'supplierId',
+            sourceKey: 'id',
+            as: 'contacts',
+            onDelete: 'CASCADE'
+        });
+
+        Supplier.hasMany(models.Inventory, {
+            foreignKey: 'supplierId',
+            as: 'inventory',
+            onDelete: 'CASCADE',
+        });
     };
 
     return Supplier;

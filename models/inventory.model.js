@@ -47,6 +47,14 @@ export default (sequelize, DataTypes) => {
           type: DataTypes.INTEGER,
           allowNull: false,
         },
+        minThreshold: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+        },
+        maxThreshold: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+        },
         status: {
           type: DataTypes.ENUM("active", "inactive"),
           allowNull: false,

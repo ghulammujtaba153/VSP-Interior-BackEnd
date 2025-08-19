@@ -1,10 +1,11 @@
 import db from '../../models/index.js';
-const { Cabinet } = db;
+const { Cabinet, Audit } = db;
 
 export const createCabinet = async (req, res) => {
     try {
         console.log(req.body)
         const cabinet = await Cabinet.create(req.body);
+        await Audit.create({ userId: req.body.userId, action: 'create', tableName: 'cabinet', newData: cabinet.get() });
         res.status(201).json({
             message: "Cabinet created successfully",
             cabinet
@@ -16,6 +17,7 @@ export const createCabinet = async (req, res) => {
         });
     }
 }
+
 
 
 export const getCabinet = async (req, res) => {
@@ -40,6 +42,7 @@ export const updateCabinet = async (req, res) => {
             return res.status(404).json({ message: "Cabinet not found" });
         }
         await cabinet.update(req.body);
+        await Audit.create({ userId: req.body.userId, action: 'update', tableName: 'cabinet', oldData: cabinet.get(), newData: req.body });
         res.status(200).json({ message: "Cabinet updated successfully" });
     } catch (error) {
         res.status(500).json({ message: "Internal server error", error: error.message });
@@ -54,6 +57,7 @@ export const deleteCabinet = async (req, res) => {
             return res.status(404).json({ message: "Cabinet not found" });
         }
         await cabinet.destroy();
+        await Audit.create({ userId: req.body.userId, action: 'delete', tableName: 'cabinet', oldData: cabinet.get() });
         res.status(200).json({ message: "Cabinet deleted successfully" });
     } catch (error) {
         res.status(500).json({ message: "Internal server error", error: error.message });

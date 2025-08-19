@@ -1,9 +1,11 @@
 import db from '../../models/index.js';
-const {Inventory} = db;
+const {Inventory, Audit} = db;
 
 export const createInventory = async (req, res) => {
     try {
         const inventory = await Inventory.create(req.body);
+        console.log(inventory);
+        await Audit.create({ userId: req.body.userId, action: 'create', tableName: 'inventory', newData: inventory.get() });
         res.status(201).json({
             message: "Inventory created successfully",
             inventory
@@ -47,6 +49,7 @@ export const updateInventory = async (req, res) => {
             });
         }
         await inventory.update(req.body);
+        await Audit.create({ userId: req.body.userId, action: 'update', tableName: 'inventory', oldData: inventory.get(), newData: req.body });
         res.status(200).json({
             message: "Inventory updated successfully",
             inventory
@@ -69,6 +72,7 @@ export const deleteInventory = async (req, res) => {
             });
         }
         await inventory.destroy();
+        await Audit.create({ userId: req.body.userId, action: 'delete', tableName: 'inventory', oldData: inventory.get() });
         res.status(200).json({
             message: "Inventory deleted successfully",
         });

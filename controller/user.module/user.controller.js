@@ -3,25 +3,19 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { sendEmail } from '../../service/mailService.js';
 
-const { User, Role, Permission, Resource } = db;
+const { User, Role, Permission, Resource, Audit } = db;
 
 
 export const createUser = async (req, res) => {
     try {
-      const { name, email, password, role, roleId } = req.body;
-  
-      // Handle role - if role name is provided, find the role ID
-      let finalRoleId = roleId;
-      if (role && !roleId) {
-        const roleRecord = await Role.findOne({ where: { name: role } });
-        if (roleRecord) {
-          finalRoleId = roleRecord.id;
-        }
-      }
+      const { name, email, password, role } = req.body;
+
 
       // Create user
       const hashedPassword = await bcrypt.hash(password, 10);
-      const user = await User.create({ name, email, password: hashedPassword, roleId: finalRoleId });
+      const roleRecord = await Role.findOne({ where: { name: role } });
+
+      const user = await User.create({ name, email, password: hashedPassword, roleId:roleRecord.id });
   
       // Generate reset token
       const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '2d' });
@@ -36,6 +30,8 @@ export const createUser = async (req, res) => {
       `;
   
       await sendEmail(email, 'Set Your Password - VSP Admin Panel', emailHTML);
+
+      await Audit.create({ userId: user.id, action: 'create', tableName: 'users', newData: user.get() });
   
       res.status(201).json({ user, message: 'User created and email sent' });
     } catch (error) {
@@ -57,6 +53,7 @@ export const loginUser = async (req, res) => {
             return res.status(401).json({ error: 'Invalid password' });
         }
         const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '2d' });
+        await Audit.create({ userId: user.id, action: 'login', tableName: 'users'});
         res.status(200).json({ token });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -150,6 +147,7 @@ export const updateUser = async (req, res) => {
         }
 
         await user.save();
+        await Audit.create({ userId: user.id, action: 'update', tableName: 'users', oldData: user.get(), newData: req.body });
         res.status(200).json(user);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -160,13 +158,14 @@ export const updateUser = async (req, res) => {
 export const updateUserStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status } = req.body;
+        const { status, userId } = req.body;
         const user = await User.findByPk(id);
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
         user.status = status;
         await user.save();
+        await Audit.create({ userId: userId, action: 'update', tableName: 'users', oldData: user.get(), newData: req.body });
         res.status(200).json(user);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -208,7 +207,12 @@ export const resetUserPassword = async (req, res) => {
 export const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
+        const user = await User.findByPk(id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
         await User.destroy({ where: { id } });
+        await Audit.create({ userId: req.body.userId, action: 'delete', tableName: 'users', oldData: user.get() });
         res.status(200).json({ message: 'User deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });

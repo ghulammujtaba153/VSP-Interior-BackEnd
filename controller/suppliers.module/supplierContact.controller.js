@@ -1,11 +1,12 @@
 import db from "../../models/index.js";
-const { SupplierContacts } = db;
+const { SupplierContacts, Audit } = db;
 
 
 export const createSupplierContact = async (req, res) => {
 
     try {
         const supplierContact = await SupplierContacts.create(req.body);
+        await Audit.create({ userId: req.body.userId, action: 'create', tableName: 'supplierContacts', newData: supplierContact.get() });
         res.status(201).json({
             message: "Supplier contact created successfully",
             data: supplierContact
@@ -40,6 +41,7 @@ export const updateSupplierContact = async (req, res) => {
         const supplierContact = await SupplierContacts.update(req.body, {
             where: { id: req.params.id }
         });
+        await Audit.create({ userId: req.body.userId, action: 'update', tableName: 'supplierContacts', oldData: supplierContact.get(), newData: req.body });
         res.status(200).json({
             message: "Supplier contact updated successfully",
             data: supplierContact
@@ -58,6 +60,7 @@ export const deleteSupplierContact = async (req, res) => {
         const supplierContact = await SupplierContacts.destroy({
             where: { id: req.params.id }
         });
+        await Audit.create({ userId: req.body.userId, action: 'delete', tableName: 'supplierContacts', oldData: supplierContact.get() });
         res.status(200).json({
             message: "Supplier contact deleted successfully",
             data: supplierContact

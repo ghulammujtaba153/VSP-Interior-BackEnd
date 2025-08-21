@@ -19,6 +19,29 @@ export const createCabinet = async (req, res) => {
 }
 
 
+export const insertCabinet = async (req, res) => {
+    try {
+        const cabinets = req.body.cabinets;
+        if (!Array.isArray(cabinets) || cabinets.length === 0) {
+            return res.status(400).json({ message: "Invalid data format" });
+        }
+
+        const createdCabinets = await Cabinet.bulkCreate(cabinets);
+        await Audit.create({ userId: req.body.userId, action: 'create', tableName: 'cabinet', newData: createdCabinets.map(cabinet => cabinet.get()) });
+
+        res.status(201).json({
+            message: "Cabinets inserted successfully",
+            cabinets: createdCabinets
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+}
+
+
 
 export const getCabinet = async (req, res) => {
     try {

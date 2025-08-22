@@ -6,7 +6,7 @@ const resourceRouter = express.Router();
 
 resourceRouter.post('/create', createResource);
 resourceRouter.get('/get', getResources);
-resourceRouter.delete('/delete/:id', deleteResource);
+resourceRouter.post('/delete', deleteResource);
 resourceRouter.put('/update/:id', updateResource);
 
 export default resourceRouter;

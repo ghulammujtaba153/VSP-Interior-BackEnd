@@ -21,6 +21,19 @@ export const createSupplier = async (req, res) => {
 }
 
 
+export const importCSV = async (req, res) => {
+    const { userId, suppliers } = req.body;
+
+    try {
+        const supplier = await Suppliers.bulkCreate(suppliers.map(row => ({ ...row })));
+        await Audit.create({ userId, action: 'import', tableName: 'suppliers', newData: supplier });
+        res.status(201).json(suppliers);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
+
 export const getSuppliers = async (req, res) => {
 
     try {

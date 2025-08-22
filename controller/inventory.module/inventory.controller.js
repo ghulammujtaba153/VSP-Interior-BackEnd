@@ -18,6 +18,19 @@ export const createInventory = async (req, res) => {
     }
 }
 
+
+export const importCSV = async (req, res) => {
+    try {
+        const { inventory, userId } = req.body;
+        console.log(inventory);
+        const inven = await Inventory.bulkCreate(inventory.map(row => ({ ...row })));
+        await Audit.create({ userId, action: 'import', tableName: 'inventory', newData: inven });
+        res.status(201).json(inventory);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
 export const getInventory = async (req, res) => {
     try{
         const inventory = await Inventory.findAll({

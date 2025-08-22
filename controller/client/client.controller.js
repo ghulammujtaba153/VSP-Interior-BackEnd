@@ -11,6 +11,27 @@ export const createClient = async (req, res) => {
    }
 }
 
+
+export const importCSV = async (req, res) => {
+    try {
+        const { clients, userId } = req.body;
+
+        // Validate rows before inserting
+        for (const row of clients) {
+            if (!row.companyName || !row.emailAddress) {
+                return res.status(400).json({ message: "companyName and emailAddress are required" });
+            }
+        }
+
+        const client = await Clients.bulkCreate(clients.map(row => ({ ...row })));
+        await Audit.create({ userId, action: 'import', tableName: 'clients', newData: client });
+
+        res.status(201).json(clients);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
 export const getClients = async (req, res) => {
     try {
         const clients = await Clients.findAll({

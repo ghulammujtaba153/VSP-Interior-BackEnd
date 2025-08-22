@@ -1,10 +1,11 @@
 import express from "express";
-import { createClient, getClients, updateClient, deleteClient, getClientById, statusUpdate } from "../../controller/client/client.controller.js";
+import { createClient, getClients, updateClient, deleteClient, getClientById, statusUpdate, importCSV } from "../../controller/client/client.controller.js";
 
 const clientRouter = express.Router();
 
 
 clientRouter.post("/create", createClient);
+clientRouter.post("/import", importCSV);
 clientRouter.get("/get", getClients);
 clientRouter.get("/get/:id", getClientById);
 clientRouter.put("/update/:id", updateClient);

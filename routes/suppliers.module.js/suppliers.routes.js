@@ -1,9 +1,10 @@
 import express from "express";
-import { createSupplier, getSuppliers, getSupplierById, updateSupplier, deleteSupplier } from "../../controller/suppliers.module/suppliers.controller.js";
+import { createSupplier, getSuppliers, getSupplierById, updateSupplier, deleteSupplier, importCSV } from "../../controller/suppliers.module/suppliers.controller.js";
 
 const suppliersRouter = express.Router();
 
 suppliersRouter.post("/create", createSupplier);
+suppliersRouter.post("/import", importCSV);
 suppliersRouter.get("/get", getSuppliers);
 suppliersRouter.get("/get/:id", getSupplierById);
 suppliersRouter.put("/update/:id", updateSupplier);

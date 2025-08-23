@@ -101,7 +101,10 @@ export const getUserById = async (req, res) => {
 }
 
 export const getUsers = async (req, res) => {
+    const { page, limit } = req.query;
     try {
+        const offset = (page - 1) * limit;
+        
         const users = await User.findAll({
             include: [
                 {
@@ -110,7 +113,9 @@ export const getUsers = async (req, res) => {
             ],
             attributes: {
                 exclude: ['password']
-            }
+            },
+            offset,
+            limit
         });
         res.status(200).json(users);
     } catch (error) {

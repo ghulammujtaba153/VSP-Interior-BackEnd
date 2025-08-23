@@ -35,19 +35,31 @@ export const importCSV = async (req, res) => {
 
 
 export const getSuppliers = async (req, res) => {
-
     try {
-        const suppliers = await Suppliers.findAll({
+        const { page = 1, limit = 10 } = req.query;
+        const offset = (page - 1) * limit;
+
+        const { count, rows: suppliers } = await Suppliers.findAndCountAll({
             include: [
                 {
                     model: SupplierContacts,
                     as: 'contacts'
                 }
-            ]
+            ],
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            order: [['createdAt', 'DESC']]
         });
+
         res.status(200).json({
             message: "Suppliers fetched successfully",
-            data: suppliers
+            data: suppliers,
+            pagination: {
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(count / limit),
+                totalItems: count,
+                itemsPerPage: parseInt(limit)
+            }
         });
     } catch (error) {
         res.status(500).json({

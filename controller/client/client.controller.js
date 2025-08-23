@@ -34,15 +34,31 @@ export const importCSV = async (req, res) => {
 
 export const getClients = async (req, res) => {
     try {
-        const clients = await Clients.findAll({
+        const { page = 1, limit = 10 } = req.query;
+        const offset = (page - 1) * limit;
+
+        const { count, rows: clients } = await Clients.findAndCountAll({
             include: [
                 {
                     model: Contacts,
                     as: 'contacts', // 👈 use the alias from your association
                 }
-            ]
+            ],
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            order: [['createdAt', 'DESC']]
         });
-        res.status(200).json(clients);
+
+        res.status(200).json({
+            message: "Clients fetched successfully",
+            data: clients,
+            pagination: {
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(count / limit),
+                totalItems: count,
+                itemsPerPage: parseInt(limit)
+            }
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

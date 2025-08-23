@@ -8,14 +8,13 @@ const { User, Role, Permission, Resource, Audit } = db;
 
 export const createUser = async (req, res) => {
     try {
-      const { name, email, password, role } = req.body;
+      const { name, email, password, roleId } = req.body;
 
 
       // Create user
       const hashedPassword = await bcrypt.hash(password, 10);
-      const roleRecord = await Role.findOne({ where: { name: role } });
 
-      const user = await User.create({ name, email, password: hashedPassword, roleId:roleRecord.id });
+      const user = await User.create({ name, email, password: hashedPassword, roleId });
   
       // Generate reset token
       const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '2d' });

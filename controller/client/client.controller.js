@@ -34,10 +34,23 @@ export const importCSV = async (req, res) => {
 
 export const getClients = async (req, res) => {
     try {
-        const { page = 1, limit = 10 } = req.query;
+        const { page = 1, limit = 10, search = '' } = req.query;
         const offset = (page - 1) * limit;
 
+        // Build search conditions
+        const whereConditions = {};
+        if (search && search.trim() !== '') {
+            whereConditions[db.Sequelize.Op.or] = [
+                { companyName: { [db.Sequelize.Op.iLike]: `%${search}%` } },
+                { emailAddress: { [db.Sequelize.Op.iLike]: `%${search}%` } },
+                { phoneNumber: { [db.Sequelize.Op.iLike]: `%${search}%` } },
+                { address: { [db.Sequelize.Op.iLike]: `%${search}%` } },
+                { postCode: { [db.Sequelize.Op.iLike]: `%${search}%` } }
+            ];
+        }
+
         const { count, rows: clients } = await Clients.findAndCountAll({
+            where: whereConditions,
             include: [
                 {
                     model: Contacts,
@@ -56,7 +69,8 @@ export const getClients = async (req, res) => {
                 currentPage: parseInt(page),
                 totalPages: Math.ceil(count / limit),
                 totalItems: count,
-                itemsPerPage: parseInt(limit)
+                itemsPerPage: parseInt(limit),
+                searchTerm: search
             }
         });
     } catch (error) {

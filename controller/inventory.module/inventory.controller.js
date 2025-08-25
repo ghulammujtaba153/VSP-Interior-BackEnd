@@ -1,4 +1,5 @@
 import db from '../../models/index.js';
+import { Sequelize, Op } from "sequelize";
 const {Inventory, Audit} = db;
 
 export const createInventory = async (req, res) => {
@@ -31,27 +32,57 @@ export const importCSV = async (req, res) => {
     }
 }
 
+
+
 export const getInventory = async (req, res) => {
-    try{
-        const inventory = await Inventory.findAll({
-            include: [
-                {
-                    model: db.Suppliers,
-                    as: 'supplier'
-                }
-            ]
-        });
-        res.status(200).json({
-            message: "Inventory fetched successfully",
-            inventory
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: "Error fetching inventory",
-            error: error.message
-        });
-    }
-}
+  const { page = 1, limit = 10, search = "" } = req.query;
+  const offset = (page - 1) * limit;
+  const whereConditions = {};
+
+  if (search && search.trim() !== "") {
+    whereConditions[Op.or] = [
+      { itemCode: { [Op.iLike]: `%${search}%` } },
+      { name: { [Op.iLike]: `%${search}%` } },
+      { description: { [Op.iLike]: `%${search}%` } },
+
+      // ✅ Cast numeric fields to TEXT so iLike works
+      Sequelize.where(
+        Sequelize.cast(Sequelize.col("costPrice"), "TEXT"),
+        { [Op.iLike]: `%${search}%` }
+      ),
+      Sequelize.where(
+        Sequelize.cast(Sequelize.col("quantity"), "TEXT"),
+        { [Op.iLike]: `%${search}%` }
+      ),
+    ];
+  }
+
+  try {
+    const { rows, count } = await Inventory.findAndCountAll({
+      include: [
+        {
+          model: db.Suppliers,
+          as: "supplier",
+        },
+      ],
+      where: whereConditions,
+      offset,
+      limit: parseInt(limit, 10),
+    });
+
+    res.status(200).json({
+      message: "Inventory fetched successfully",
+      inventory: rows,
+      total: count, // ✅ send total for pagination
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching inventory",
+      error: error.message,
+    });
+  }
+};
+
 
 export const updateInventory = async (req, res) => {
     try{

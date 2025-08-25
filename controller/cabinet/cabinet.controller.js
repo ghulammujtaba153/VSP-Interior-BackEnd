@@ -1,4 +1,5 @@
 import db from '../../models/index.js';
+import { Sequelize } from 'sequelize';
 const { Cabinet, Audit } = db;
 
 export const createCabinet = async (req, res) => {
@@ -44,8 +45,45 @@ export const insertCabinet = async (req, res) => {
 
 
 export const getCabinet = async (req, res) => {
+    const { page = 1, limit = 10, search = '' } = req.query;
+    const offset = (page - 1) * limit;
+    const whereConditions = {};
+    if (search && search.trim() !== '') {
+        whereConditions[db.Sequelize.Op.or] = [
+            { modelName: { [db.Sequelize.Op.iLike]: `%${search}%` } },
+            { material: { [db.Sequelize.Op.iLike]: `%${search}%` } },
+
+            // ✅ Cast numeric fields to TEXT so iLike works
+            Sequelize.where(
+                Sequelize.cast(Sequelize.col("height"), "TEXT"),
+                { [db.Sequelize.Op.iLike]: `%${search}%` }
+            ),
+            Sequelize.where(
+                Sequelize.cast(Sequelize.col("width"), "TEXT"),
+                { [db.Sequelize.Op.iLike]: `%${search}%` }
+            ),
+            Sequelize.where(
+                Sequelize.cast(Sequelize.col("depth"), "TEXT"),
+                { [db.Sequelize.Op.iLike]: `%${search}%` }
+            ),
+            Sequelize.where(
+                Sequelize.cast(Sequelize.col("basePrice"), "TEXT"),
+                { [db.Sequelize.Op.iLike]: `%${search}%` }
+            ),
+            Sequelize.where(
+                Sequelize.cast(Sequelize.col("pricePerSqft"), "TEXT"),
+                { [db.Sequelize.Op.iLike]: `%${search}%` }
+            ),
+            { status: { [db.Sequelize.Op.iLike]: `%${search}%` } },
+        ];
+    }
+
     try {
-        const cabinet = await Cabinet.findAll();
+        const cabinet = await Cabinet.findAll({
+            where: whereConditions,
+            offset,
+            limit
+        });
         res.status(200).json({
             message: "Cabinets fetched successfully",
             cabinet

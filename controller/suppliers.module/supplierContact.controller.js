@@ -20,6 +20,29 @@ export const createSupplierContact = async (req, res) => {
 }
 
 
+
+export const importCSV = async (req, res) => {
+    try {
+        const { supplierContacts, userId } = req.body;
+
+        // Validate rows before inserting
+        for (const row of supplierContacts) {
+            if (!row.phoneNumber || !row.emailAddress) {
+                return res.status(400).json({ message: "phoneNumber and emailAddress are required" });
+            }
+        }
+
+        const supplierContact = await SupplierContacts.bulkCreate(supplierContacts.map(row => ({ ...row })));
+        await Audit.create({ userId, action: 'import', tableName: 'supplierContacts', newData: supplierContact });
+
+        res.status(201).json(supplierContacts);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
+
+
 export const getSupplierContacts = async (req, res) => {
     try {
         const supplierContacts = await SupplierContacts.findAll();

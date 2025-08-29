@@ -1,6 +1,6 @@
 import db from '../../models/index.js';
 import { Sequelize } from 'sequelize';
-const { Cabinet, Audit } = db;
+const { Cabinet, Audit, CabinetCategories, CabinetSubCategories } = db;
 
 export const createCabinet = async (req, res) => {
     try {
@@ -25,6 +25,7 @@ export const insertCabinet = async (req, res) => {
         const cabinets = req.body.cabinets;
         if (!Array.isArray(cabinets) || cabinets.length === 0) {
             return res.status(400).json({ message: "Invalid data format" });
+            
         }
 
         const createdCabinets = await Cabinet.bulkCreate(cabinets);
@@ -80,9 +81,20 @@ export const getCabinet = async (req, res) => {
 
     try {
         const cabinet = await Cabinet.findAll({
+
             where: whereConditions,
             offset,
-            limit
+            limit,
+            include: [
+                {
+                    model: CabinetCategories,
+                    as: 'cabinetCategory'
+                },
+                {
+                    model: CabinetSubCategories,
+                    as: 'cabinetSubCategory'
+                }
+            ]
         });
         res.status(200).json({
             message: "Cabinets fetched successfully",

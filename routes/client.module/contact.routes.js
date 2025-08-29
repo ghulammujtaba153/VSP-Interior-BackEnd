@@ -1,9 +1,11 @@
 import express from "express";
-import { createContact, getContacts, getContactByClient, updateContact, deleteContact } from "../../controller/client/contact.controller.js";
+import { createContact, getContacts, getContactByClient, updateContact, deleteContact, importCSV } from "../../controller/client/contact.controller.js";
 
 const contactRouter = express.Router();
 
 contactRouter.post("/create", createContact);
+contactRouter.post("/import", importCSV);
+
 
 contactRouter.get("/get", getContacts);
 

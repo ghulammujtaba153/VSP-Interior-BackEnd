@@ -14,6 +14,9 @@ import InventoryModel from './inventory.model.js';
 import CabinetModel from './cabinet.model.js';
 import AuditModel from './audit.model.js';
 import NotificationModel from './notification.model.js';
+import CabinetCategoriesModel from './cabinetCategories.model.js';
+import CabinetSubCategoriesModel from './cabinetSubCategories.model.js';
+
 
 dotenv.config();
 
@@ -43,7 +46,8 @@ const SupplierContacts = SupplierContactModel(sequelize, Sequelize.DataTypes);
 const Cabinet = CabinetModel(sequelize, Sequelize.DataTypes);
 const Audit = AuditModel(sequelize, Sequelize.DataTypes);
 const Notification = NotificationModel(sequelize, Sequelize.DataTypes)
-
+const CabinetCategories = CabinetCategoriesModel(sequelize, Sequelize.DataTypes)
+const CabinetSubCategories = CabinetSubCategoriesModel(sequelize, Sequelize.DataTypes)
 // Prepare DB object
 const db = {
   User,
@@ -58,6 +62,8 @@ const db = {
   Cabinet,
   Audit,
   Notification,
+  CabinetCategories,
+  CabinetSubCategories,
   sequelize,
   Sequelize,
 };

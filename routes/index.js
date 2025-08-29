@@ -11,6 +11,8 @@ import inventoryRouter from "./inventory.module/inventory.routes.js";
 import cabinetRouter from "./cabinet.module/cabinet.routes.js";
 import auditRouter from "./audit.module/audit.routes.js";
 import notificationRouter from "./notification.module.js/notification.routes.js";
+import cabinetCategoriesRouter from "./cabinet.module/cabinetCategories.routes.js";
+import cabinetSubcategoriesRouter from "./cabinet.module/cabinetSubcategories.routes.js";
 
 const router = express.Router();
 
@@ -26,5 +28,7 @@ router.use('/inventory', inventoryRouter);
 router.use('/cabinet', cabinetRouter);
 router.use('/audit', auditRouter);
 router.use("/notification", notificationRouter)
+router.use('/cabinet-categories', cabinetCategoriesRouter);
+router.use('/cabinet-subcategories', cabinetSubcategoriesRouter);
 
 export default router;

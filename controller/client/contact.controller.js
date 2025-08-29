@@ -13,6 +13,27 @@ export const createContact = async (req, res) => {
 }
 
 
+export const importCSV = async (req, res) => {
+    try {
+        const { contacts, userId } = req.body;
+
+        // Validate rows before inserting
+        for (const row of contacts) {
+            if (!row.phoneNumber || !row.emailAddress) {
+                return res.status(400).json({ message: "phoneNumber and emailAddress are required" });
+            }
+        }
+
+        const contact = await Contacts.bulkCreate(contacts.map(row => ({ ...row })));
+        await Audit.create({ userId, action: 'import', tableName: 'contacts', newData: contact });
+
+        res.status(201).json(contacts);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
+
 export const getContacts = async (req, res) => {
     try {
         const contacts = await Contacts.findAll();

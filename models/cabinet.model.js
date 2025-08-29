@@ -1,53 +1,55 @@
+
 export default (sequelize, DataTypes) => {
-    const Cabinet = sequelize.define("Cabinet", {
+    const Cabinet = sequelize.define(
+      "Cabinet",
+      {
         id: {
-            type: DataTypes.INTEGER,
-            primaryKey: true,
-            autoIncrement: true
+          type: DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true,
         },
-        modelName: {
-            type: DataTypes.STRING,
-            allowNull: false
+        cabinetCategoryId: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
         },
-        material: {
-            type: DataTypes.STRING,
-            allowNull: false
+        cabinetSubCategoryId: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
         },
-        height: {
-            type: DataTypes.INTEGER,
-            allowNull: false
+        code: {
+          type: DataTypes.STRING,
+          allowNull: true,
         },
-        width: {
-            type: DataTypes.INTEGER,
-            allowNull: false
+        description: {
+          type: DataTypes.STRING,
+          allowNull: true,
         },
-        depth: {
-            type: DataTypes.INTEGER,
-            allowNull: true
-        },
-        basePrice: {
-            type: DataTypes.INTEGER,
-            allowNull: false
-        },
-        pricePerSqft:{
-            type: DataTypes.INTEGER,
+        dynamicData: {
+          type: DataTypes.JSONB, // ✅ Flexible dynamic fields
+          allowNull: true,
         },
         status: {
-            type: DataTypes.STRING,
-            enum: ['active', 'inactive'],
-            defaultValue: 'active'
+          type: DataTypes.ENUM("active", "inactive"), // ✅ proper enum
+          defaultValue: "active",
         },
-        createdAt: {
-            type: DataTypes.DATE,
-            allowNull: false
-        },
-        updatedAt: {
-            type: DataTypes.DATE,
-            allowNull: false
-        }
-    }, {
-        tableName: "cabinet",
-    });
-
+      },
+      {
+        tableName: "cabinets", // ✅ better to match plural DB convention
+        timestamps: true, // ✅ will auto-create createdAt & updatedAt
+      }
+    );
+  
+    Cabinet.associate = (models) => {
+      Cabinet.belongsTo(models.CabinetCategories, {
+        foreignKey: "cabinetCategoryId",
+        as: "cabinetCategory",
+      });
+      Cabinet.belongsTo(models.CabinetSubCategories, {
+        foreignKey: "cabinetSubCategoryId",
+        as: "cabinetSubCategory",
+      });
+    };
+  
     return Cabinet;
-};
+  };
+  

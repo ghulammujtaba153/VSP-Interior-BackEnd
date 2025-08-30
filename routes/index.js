@@ -13,6 +13,7 @@ import auditRouter from "./audit.module/audit.routes.js";
 import notificationRouter from "./notification.module.js/notification.routes.js";
 import cabinetCategoriesRouter from "./cabinet.module/cabinetCategories.routes.js";
 import cabinetSubcategoriesRouter from "./cabinet.module/cabinetSubcategories.routes.js";
+import cabinetQuoteRouter from "./cabinet.module/cabinetMaterial.routes.js";
 
 const router = express.Router();
 
@@ -30,5 +31,6 @@ router.use('/audit', auditRouter);
 router.use("/notification", notificationRouter)
 router.use('/cabinet-categories', cabinetCategoriesRouter);
 router.use('/cabinet-subcategories', cabinetSubcategoriesRouter);
+router.use('/cabinet-quote', cabinetQuoteRouter);
 
 export default router;

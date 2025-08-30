@@ -16,12 +16,25 @@ export const createCabinetCategory = async (req, res) => {
 
 
 export const getCabinetCategories = async (req, res) => {
+    const { page = 1, limit = 10, search = '' } = req.query;
+    const offset = (page - 1) * limit;
+
+    const whereConditions = {};
+    if (search && search.trim() !== '') {
+        whereConditions[db.Sequelize.Op.or] = [
+            { name: { [db.Sequelize.Op.iLike]: `%${search}%` } },
+        ];
+    }
+
     try {
         const cabinetCategories = await CabinetCategories.findAll({
             include: [{
                 model: CabinetSubCategories,
                 as: 'subCategories',
-            }]
+            }],
+            offset,
+            limit,
+            where: whereConditions
         });
         res.status(200).json(cabinetCategories);
     } catch (error) {

@@ -35,8 +35,8 @@ db.sequelize
   .sync({ alter: true }) // or force: true to drop & recreate
   .then(() => {
     console.log('✅ Database synced with Supabase');
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running at http://localhost:${PORT}`);
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
     });
   })
   .catch((err) => {

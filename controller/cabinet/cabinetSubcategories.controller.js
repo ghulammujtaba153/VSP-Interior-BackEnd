@@ -12,6 +12,16 @@ export const createCabinetSubCategory = async (req, res) => {
 }
 
 
+export const importCSV = async (req, res) => {
+    try {
+        const cabinetSubCategory= await CabinetSubCategories.bulkCreate(req.body.data);
+        res.status(201).json({ message: "Subcategories imported successfully", cabinetSubCategory });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
+
 export const getCabinetSubCategories = async (req, res) => {
     try {
         const cabinetSubCategories = await CabinetSubCategories.findAll({ where: { categoryId: req.params.id } });

@@ -32,5 +32,7 @@ export default (sequelize, DataTypes) => {
         });
       };
 
+      
+
     return CabinetCategories;
 }

@@ -20,10 +20,14 @@ export default (sequelize, DataTypes) => {
     CabinetMaterial.associate = (models) => {
         CabinetMaterial.belongsTo(models.CabinetQuote, {
             foreignKey: "cabinetQuoteId",
+            onDelete: "CASCADE",
+            onUpdate: "CASCADE",
             as: "cabinetQuote",
         });
         CabinetMaterial.belongsTo(models.Cabinet, {
             foreignKey: "cabinetId",
+            onDelete: "CASCADE",
+            onUpdate: "CASCADE",
             as: "cabinet",
         });
     };

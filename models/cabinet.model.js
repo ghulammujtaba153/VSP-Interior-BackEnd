@@ -42,10 +42,12 @@ export default (sequelize, DataTypes) => {
     Cabinet.associate = (models) => {
       Cabinet.belongsTo(models.CabinetCategories, {
         foreignKey: "cabinetCategoryId",
+        onDelete: "CASCADE",
         as: "cabinetCategory",
       });
       Cabinet.belongsTo(models.CabinetSubCategories, {
         foreignKey: "cabinetSubCategoryId",
+        onDelete: "CASCADE",
         as: "cabinetSubCategory",
       });
     };

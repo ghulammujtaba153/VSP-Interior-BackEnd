@@ -4,8 +4,8 @@ import { createCabinet, deleteCabinet, getCabinet, insertCabinet, updateCabinet 
 const cabinetRouter = express.Router();
 
 cabinetRouter.post("/create", createCabinet);
-cabinetRouter.post("/csv", insertCabinet); 
-cabinetRouter.get("/get", getCabinet);
+cabinetRouter.post("/import", insertCabinet); 
+cabinetRouter.get("/get/:id", getCabinet);
 cabinetRouter.put("/update/:id", updateCabinet);
 cabinetRouter.delete("/delete/:id", deleteCabinet);
 

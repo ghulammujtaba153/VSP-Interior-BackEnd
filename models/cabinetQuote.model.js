@@ -21,6 +21,8 @@ export default (sequelize, DataTypes) => {
     CabinetQuote.associate = (models) => {
         CabinetQuote.hasMany(models.CabinetMaterial, {
             foreignKey: "cabinetQuoteId",
+            onDelete: "CASCADE",
+            onUpdate: "CASCADE",
             as: "cabinetMaterials",
         });
     };

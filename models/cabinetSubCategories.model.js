@@ -31,5 +31,7 @@ export default (sequelize, DataTypes) => {
         CabinetSubCategories.belongsTo(models.CabinetCategories, { foreignKey: 'categoryId' });
     };
 
+    
+
     return CabinetSubCategories;
 }

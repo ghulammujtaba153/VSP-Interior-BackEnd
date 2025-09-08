@@ -25,13 +25,36 @@ export const importCSV = async (req, res) => {
     const { userId, suppliers } = req.body;
 
     try {
-        const supplier = await Suppliers.bulkCreate(suppliers.map(row => ({ ...row })));
-        await Audit.create({ userId, action: 'import', tableName: 'suppliers', newData: supplier });
-        res.status(201).json(suppliers);
+        // Get existing suppliers from DB
+        const existingSuppliers = await Suppliers.findAll({ attributes: ["name"] });
+        const existingNames = new Set(existingSuppliers.map(e => e.name));
+
+        // Filter out duplicates
+        const uniqueSuppliers = suppliers.filter(supplier => !existingNames.has(supplier.name));
+
+        let insertedSuppliers = [];
+        if (uniqueSuppliers.length > 0) {
+            insertedSuppliers = await Suppliers.bulkCreate(uniqueSuppliers.map(row => ({ ...row })));
+
+            // Audit log only when new suppliers are added
+            await Audit.create({ 
+                userId, 
+                action: 'import', 
+                tableName: 'suppliers', 
+                newData: insertedSuppliers 
+            });
+        }
+
+        res.status(201).json({
+            message: "Suppliers processed successfully",
+            inserted: insertedSuppliers.length,
+            skipped: suppliers.length - insertedSuppliers.length,
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
-}
+};
+
 
 
 export const getSuppliers = async (req, res) => {

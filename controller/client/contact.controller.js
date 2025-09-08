@@ -17,21 +17,48 @@ export const importCSV = async (req, res) => {
     try {
         const { contacts, userId } = req.body;
 
-        // Validate rows before inserting
-        for (const row of contacts) {
-            if (!row.phoneNumber || !row.emailAddress) {
-                return res.status(400).json({ message: "phoneNumber and emailAddress are required" });
-            }
+        // Fetch existing contacts (phone + email)
+        const existingContacts = await Contacts.findAll({
+            attributes: ["phoneNumber", "emailAddress"]
+        });
+
+        const existingPhoneNumbers = new Set(existingContacts.map(e => e.phoneNumber));
+        const existingEmailAddresses = new Set(existingContacts.map(e => e.emailAddress));
+
+        // Filter out duplicates + validate required fields
+        const uniqueContacts = contacts.filter(
+            contact =>
+                contact.phoneNumber &&
+                contact.emailAddress &&
+                !existingPhoneNumbers.has(contact.phoneNumber) &&
+                !existingEmailAddresses.has(contact.emailAddress)
+        );
+
+        let insertedContacts = [];
+        if (uniqueContacts.length > 0) {
+            insertedContacts = await Contacts.bulkCreate(
+                uniqueContacts.map(row => ({ ...row }))
+            );
+
+            // Audit log only if something new was added
+            await Audit.create({
+                userId,
+                action: "import",
+                tableName: "contacts",
+                newData: insertedContacts
+            });
         }
 
-        const contact = await Contacts.bulkCreate(contacts.map(row => ({ ...row })));
-        await Audit.create({ userId, action: 'import', tableName: 'contacts', newData: contact });
-
-        res.status(201).json(contacts);
+        res.status(201).json({
+            message: "Contacts processed successfully",
+            inserted: insertedContacts.length,
+            skipped: contacts.length - insertedContacts.length,
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
-}
+};
+
 
 
 export const getContacts = async (req, res) => {

@@ -12,25 +12,53 @@ export const createClient = async (req, res) => {
 }
 
 
+
 export const importCSV = async (req, res) => {
     try {
         const { clients, userId } = req.body;
 
-        // Validate rows before inserting
-        for (const row of clients) {
-            if (!row.companyName || !row.emailAddress) {
-                return res.status(400).json({ message: "companyName and emailAddress are required" });
-            }
+        // Fetch existing clients (companyName + emailAddress)
+        const existingClients = await Clients.findAll({
+            attributes: ["companyName", "emailAddress"]
+        });
+
+        const existingCompanyNames = new Set(existingClients.map(e => e.companyName));
+        const existingEmailAddresses = new Set(existingClients.map(e => e.emailAddress));
+
+        // Filter out duplicates + validate required fields
+        const uniqueClients = clients.filter(
+            client =>
+                client.companyName &&
+                client.emailAddress &&
+                !existingCompanyNames.has(client.companyName) &&
+                !existingEmailAddresses.has(client.emailAddress)
+        );
+
+        let insertedClients = [];
+        if (uniqueClients.length > 0) {
+            insertedClients = await Clients.bulkCreate(
+                uniqueClients.map(row => ({ ...row }))
+            );
+
+            // Audit log only if something new was added
+            await Audit.create({
+                userId,
+                action: "import",
+                tableName: "clients",
+                newData: insertedClients
+            });
         }
 
-        const client = await Clients.bulkCreate(clients.map(row => ({ ...row })));
-        await Audit.create({ userId, action: 'import', tableName: 'clients', newData: client });
-
-        res.status(201).json(clients);
+        res.status(201).json({
+            message: "Clients processed successfully",
+            inserted: insertedClients.length,
+            skipped: clients.length - insertedClients.length,
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
-}
+};
+
 
 export const getClients = async (req, res) => {
     try {
@@ -59,7 +87,8 @@ export const getClients = async (req, res) => {
             ],
             limit: parseInt(limit),
             offset: parseInt(offset),
-            order: [['createdAt', 'DESC']]
+            order: [['createdAt', 'DESC']],
+            distinct: true,
         });
 
         res.status(200).json({

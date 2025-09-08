@@ -25,21 +25,47 @@ export const importCSV = async (req, res) => {
     try {
         const { supplierContacts, userId } = req.body;
 
-        // Validate rows before inserting
-        for (const row of supplierContacts) {
-            if (!row.phoneNumber || !row.emailAddress) {
-                return res.status(400).json({ message: "phoneNumber and emailAddress are required" });
-            }
+        // Fetch existing contacts (phone + email)
+        const existingSupplierContacts = await SupplierContacts.findAll({
+            attributes: ["phoneNumber", "emailAddress"]
+        });
+
+        const existingPhoneNumbers = new Set(existingSupplierContacts.map(e => e.phoneNumber));
+        const existingEmailAddresses = new Set(existingSupplierContacts.map(e => e.emailAddress));
+
+        // Filter unique new contacts
+        const uniqueSupplierContacts = supplierContacts.filter(
+            contact =>
+                contact.phoneNumber &&
+                contact.emailAddress &&
+                !existingPhoneNumbers.has(contact.phoneNumber) &&
+                !existingEmailAddresses.has(contact.emailAddress)
+        );
+
+        let insertedContacts = [];
+        if (uniqueSupplierContacts.length > 0) {
+            insertedContacts = await SupplierContacts.bulkCreate(
+                uniqueSupplierContacts.map(row => ({ ...row }))
+            );
+
+            // Audit log only if new rows inserted
+            await Audit.create({
+                userId,
+                action: "import",
+                tableName: "supplierContacts",
+                newData: insertedContacts
+            });
         }
 
-        const supplierContact = await SupplierContacts.bulkCreate(supplierContacts.map(row => ({ ...row })));
-        await Audit.create({ userId, action: 'import', tableName: 'supplierContacts', newData: supplierContact });
-
-        res.status(201).json(supplierContacts);
+        res.status(201).json({
+            message: "Supplier contacts processed successfully",
+            inserted: insertedContacts.length,
+            skipped: supplierContacts.length - insertedContacts.length,
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
-}
+};
 
 
 

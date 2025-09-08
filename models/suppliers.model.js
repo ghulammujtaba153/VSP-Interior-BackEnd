@@ -7,7 +7,7 @@ export default (sequelize, DataTypes) => {
             autoIncrement: true,
             primaryKey: true,
         },
-        companyName: {
+        name: {
             type: DataTypes.STRING,
             allowNull: false,
         },
@@ -34,6 +34,13 @@ export default (sequelize, DataTypes) => {
         notes: {
             type: DataTypes.STRING,
         },
+        isCompany: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+        },
+    }, {
+        timestamps: true,
+        tableName: 'suppliers',
     });
 
     Supplier.associate = (models) => {
@@ -47,6 +54,12 @@ export default (sequelize, DataTypes) => {
         Supplier.hasMany(models.Inventory, {
             foreignKey: 'supplierId',
             as: 'inventory',
+            onDelete: 'CASCADE',
+        });
+
+        Supplier.hasMany(models.PriceBookCategory, {
+            foreignKey: 'supplierId',
+            as: 'priceBookCategory',
             onDelete: 'CASCADE',
         });
     };

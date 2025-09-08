@@ -14,6 +14,8 @@ import notificationRouter from "./notification.module.js/notification.routes.js"
 import cabinetCategoriesRouter from "./cabinet.module/cabinetCategories.routes.js";
 import cabinetSubcategoriesRouter from "./cabinet.module/cabinetSubcategories.routes.js";
 import cabinetQuoteRouter from "./cabinet.module/cabinetMaterial.routes.js";
+import priceBookRouter from "./suppliers.module.js/priceBook.routes.js";
+import priceBookCategoryRouter from "./suppliers.module.js/priceBookCategory.routes.js";
 
 const router = express.Router();
 
@@ -32,5 +34,7 @@ router.use("/notification", notificationRouter)
 router.use('/cabinet-categories', cabinetCategoriesRouter);
 router.use('/cabinet-subcategories', cabinetSubcategoriesRouter);
 router.use('/cabinet-quote', cabinetQuoteRouter);
+router.use('/pricebook-categories', priceBookCategoryRouter);
+router.use('/pricebook', priceBookRouter);
 
 export default router;

@@ -21,27 +21,57 @@ export const createCabinet = async (req, res) => {
 
 
 export const insertCabinet = async (req, res) => {
-    try {
-        const cabinets = req.body.data;
-        if (!Array.isArray(cabinets) || cabinets.length === 0) {
-            return res.status(400).json({ message: "Invalid data format" });
-            
-        }
+  try {
+    let cabinets = req.body.data;
 
-        const createdCabinets = await Cabinet.bulkCreate(cabinets);
-        // await Audit.create({ userId: req.body.userId, action: 'create', tableName: 'cabinet', newData: createdCabinets.map(cabinet => cabinet.get()) });
-
-        res.status(201).json({
-            message: "Cabinets inserted successfully",
-            cabinets: createdCabinets
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: "Internal server error",
-            error: error.message
-        });
+    if (!Array.isArray(cabinets) || cabinets.length === 0) {
+      return res.status(400).json({ message: "Invalid data format" });
     }
-}
+
+    // remove duplicate cabinets from request (based on 'code')
+    const uniqueCabinets = [];
+    const requestCodes = new Set();
+    for (const cabinet of cabinets) {
+      if (!requestCodes.has(cabinet.code)) {
+        uniqueCabinets.push(cabinet);
+        requestCodes.add(cabinet.code);
+      }
+    }
+
+    // fetch existing cabinet codes from DB
+    const cabinetFromDB = await Cabinet.findAll({
+      attributes: ["code"],
+    });
+    const existingCodes = new Set(cabinetFromDB.map((c) => c.code));
+
+    // filter out cabinets that already exist in DB
+    const newCabinets = uniqueCabinets.filter(
+      (cabinet) => !existingCodes.has(cabinet.code)
+    );
+
+    // insert only new cabinets (if any)
+    const createdCabinets = newCabinets.length > 0
+      ? await Cabinet.bulkCreate(newCabinets)
+      : [];
+
+    const duplicateCount = uniqueCabinets.length - newCabinets.length;
+
+    res.status(201).json({
+      message: newCabinets.length > 0
+        ? `Cabinets processed: inserted ${createdCabinets.length}, removed ${duplicateCount} duplicates.`
+        : `Cabinets processed: inserted 0, removed ${duplicateCount} duplicates (all existed).`,
+      insertedCount: createdCabinets.length,
+      duplicateCount,
+      cabinets: createdCabinets,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
 
 
 
@@ -81,7 +111,8 @@ export const getCabinet = async (req, res) => {
         });
         res.status(200).json({
             message: "Cabinets fetched successfully",
-            cabinet
+            cabinet,
+            total: await Cabinet.count({ where: whereConditions })
         });
     } catch (error) {
         res.status(500).json({

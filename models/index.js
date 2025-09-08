@@ -18,7 +18,8 @@ import CabinetCategoriesModel from './cabinetCategories.model.js';
 import CabinetSubCategoriesModel from './cabinetSubCategories.model.js';
 import CabinetQuoteModel from './cabinetQuote.model.js';
 import CabinetMaterialModel from './cabinetMaterial.model.js';
-
+import PriceBookCategoryModel from './priceBookCategory.model.js';
+import PriceBookModel from './priceBook.model.js';
 dotenv.config();
 
 const isSupabase = !!process.env.DATABASE_URL;
@@ -51,6 +52,8 @@ const CabinetCategories = CabinetCategoriesModel(sequelize, Sequelize.DataTypes)
 const CabinetSubCategories = CabinetSubCategoriesModel(sequelize, Sequelize.DataTypes)
 const CabinetQuote = CabinetQuoteModel(sequelize, Sequelize.DataTypes)
 const CabinetMaterial = CabinetMaterialModel(sequelize, Sequelize.DataTypes)
+const PriceBookCategory = PriceBookCategoryModel(sequelize, Sequelize.DataTypes)
+const PriceBook = PriceBookModel(sequelize, Sequelize.DataTypes)
 // Prepare DB object
 const db = {
   User,
@@ -69,6 +72,8 @@ const db = {
   CabinetSubCategories,
   CabinetQuote,
   CabinetMaterial,
+  PriceBookCategory,
+  PriceBook,
   sequelize,
   Sequelize,
 };

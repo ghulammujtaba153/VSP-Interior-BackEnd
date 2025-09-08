@@ -23,10 +23,46 @@ export const createInventory = async (req, res) => {
 export const importCSV = async (req, res) => {
     try {
         const { inventory, userId } = req.body;
-        console.log(inventory);
-        const inven = await Inventory.bulkCreate(inventory.map(row => ({ ...row })));
-        await Audit.create({ userId, action: 'import', tableName: 'inventory', newData: inven });
-        res.status(201).json(inventory);
+
+        if (!Array.isArray(inventory) || inventory.length === 0) {
+            return res.status(400).json({ message: "Invalid data format" });
+        }
+
+        // Deduplicate incoming records by name (keep first occurrence)
+        const uniqueByName = [];
+        const seen = new Set();
+        for (const item of inventory) {
+            const name = item?.name?.trim();
+            if (name && !seen.has(name)) {
+                uniqueByName.push(item);
+                seen.add(name);
+            }
+        }
+
+        // Fetch existing inventory names from DB
+        const existing = await Inventory.findAll({ attributes: ["name"] });
+        const existingNames = new Set(existing.map(e => e.name));
+
+        // Filter out names that already exist
+        const toInsert = uniqueByName.filter(item => !existingNames.has(item.name));
+
+        // Insert only unique, non-existing items
+        const created = toInsert.length > 0
+            ? await Inventory.bulkCreate(toInsert, { returning: true })
+            : [];
+
+        // Audit
+        await Audit.create({ userId, action: 'import', tableName: 'inventory', newData: created.map(r => r.get ? r.get() : r) });
+
+        const insertedCount = created.length;
+        const duplicateCount = inventory.length - insertedCount;
+
+        return res.status(201).json({
+            message: `Inventory processed: inserted ${insertedCount}, skipped ${duplicateCount} duplicate${duplicateCount === 1 ? '' : 's'}.`,
+            insertedCount,
+            duplicateCount,
+            inventory: created,
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

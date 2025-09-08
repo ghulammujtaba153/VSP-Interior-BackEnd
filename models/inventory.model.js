@@ -10,11 +10,6 @@ export default (sequelize, DataTypes) => {
           allowNull: false,
           primaryKey: true,
         },
-        itemCode: {
-          type: DataTypes.STRING(100), // SKU/Code for tracking
-          allowNull: false,
-          unique: true,
-        },
         name: {
           type: DataTypes.STRING(150),
           allowNull: false,
@@ -47,12 +42,12 @@ export default (sequelize, DataTypes) => {
           type: DataTypes.INTEGER,
           allowNull: false,
         },
-        minThreshold: {
+        totalStocks: {
           type: DataTypes.INTEGER,
-          allowNull: true,
+          allowNull: false,
         },
-        maxThreshold: {
-          type: DataTypes.INTEGER,
+        notes: {
+          type: DataTypes.TEXT,
           allowNull: true,
         },
         status: {
@@ -78,8 +73,10 @@ export default (sequelize, DataTypes) => {
     );
 
     Inventory.associate = (models) => {
-        Inventory.belongsTo(models.Suppliers, { foreignKey: 'supplierId', as: 'supplier' });
-        Inventory.hasMany(models.Inventory, { foreignKey: 'supplierId', as: 'inventory' });
+      Inventory.belongsTo(models.Suppliers, {
+        foreignKey: "supplierId",
+        as: "supplier",
+      });
     };
   
     return Inventory;

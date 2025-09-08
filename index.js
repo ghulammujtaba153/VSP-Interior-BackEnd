@@ -6,7 +6,7 @@ import client from './config/database.js';
 import router from './routes/index.js';
 import dotenv from 'dotenv';
 import db from './models/index.js';
-import "./jobs/thresholdChecker.js"
+// import "./jobs/thresholdChecker.js"
 
 
 dotenv.config();

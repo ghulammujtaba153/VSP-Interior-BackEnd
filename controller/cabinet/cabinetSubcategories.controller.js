@@ -55,7 +55,7 @@ export const importCSV = async (req, res) => {
     return res.status(201).json({
       message: newData.length === 0
         ? "No new subcategories inserted. Returning existing records."
-        : "Subcategories imported successfully",
+        : "Subcategories imported successfully, new records inserted: " + createdRecords.length + ". skipped: " + (data.length - createdRecords.length),
       insertedCount: createdRecords.length,
       cabinetSubCategory: combined,
     });

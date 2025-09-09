@@ -50,7 +50,7 @@ export const importCSV = async (req, res) => {
         }
 
         res.status(201).json({
-            message: "Clients processed successfully",
+            message: "Clients processed successfully, added: " + insertedClients.length + " new clients.", "skipped": clients.length - insertedClients.length,
             inserted: insertedClients.length,
             skipped: clients.length - insertedClients.length,
         });

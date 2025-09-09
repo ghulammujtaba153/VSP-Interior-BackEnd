@@ -46,10 +46,15 @@ export const importCSV = async (req, res) => {
         }
 
         res.status(201).json({
-            message: "Suppliers processed successfully",
-            inserted: insertedSuppliers.length,
-            skipped: suppliers.length - insertedSuppliers.length,
-        });
+  message:
+    "processed successfully, added: " +
+    insertedSuppliers.length +
+    ", skipped: " +
+    (suppliers.length - insertedSuppliers.length),
+  inserted: insertedSuppliers.length,
+  skipped: suppliers.length - insertedSuppliers.length,
+});
+
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -66,7 +71,7 @@ export const getSuppliers = async (req, res) => {
         const whereConditions = {};
         if (search && search.trim() !== '') {
             whereConditions[db.Sequelize.Op.or] = [
-                { companyName: { [db.Sequelize.Op.iLike]: `%${search}%` } },
+                { name: { [db.Sequelize.Op.iLike]: `%${search}%` } },
                 { email: { [db.Sequelize.Op.iLike]: `%${search}%` } },
                 { phone: { [db.Sequelize.Op.iLike]: `%${search}%` } },
                 { address: { [db.Sequelize.Op.iLike]: `%${search}%` } },

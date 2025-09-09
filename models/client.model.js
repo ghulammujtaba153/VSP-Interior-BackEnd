@@ -33,6 +33,10 @@ export default (sequelize, DataTypes) => {
       },
       notes: {
         type: DataTypes.TEXT
+      },
+      isCompany:{
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
       }
     }, {
       tableName: 'clients',

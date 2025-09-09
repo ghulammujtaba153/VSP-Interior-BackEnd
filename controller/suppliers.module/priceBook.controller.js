@@ -92,7 +92,7 @@ export const getPriceBook = async (req, res) => {
             where: {
                 priceBookCategoryId: req.params.id
             },
-            
+            include: [{ model: PriceBookCategory }]
         });
         res.status(200).json(priceBook);
     } catch (error) {

@@ -34,10 +34,7 @@ export default (sequelize, DataTypes) => {
         notes: {
             type: DataTypes.STRING,
         },
-        isCompany: {
-            type: DataTypes.BOOLEAN,
-            defaultValue: false,
-        },
+
     }, {
         timestamps: true,
         tableName: 'suppliers',

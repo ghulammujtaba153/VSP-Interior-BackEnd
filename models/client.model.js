@@ -1,7 +1,7 @@
 // models/client.model.js
 
 export default (sequelize, DataTypes) => {
-    const Client = sequelize.define('Client', {
+    const Client = sequelize.define('Clients', {
       id: {
         type: DataTypes.INTEGER,
       autoIncrement: true,
@@ -50,7 +50,15 @@ export default (sequelize, DataTypes) => {
         as: 'contacts',
         onDelete: 'CASCADE'
       });
+
+      Client.hasMany(models.Project, {
+      foreignKey: "clientId", // <-- make sure Project has clientId
+      as: "projects",
+      onDelete: "SET NULL",
+    });
     };
+
+
   
     return Client;
   };

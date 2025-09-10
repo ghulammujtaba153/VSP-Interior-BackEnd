@@ -27,16 +27,17 @@ export const getCabinetCategories = async (req, res) => {
     }
 
     try {
-        const cabinetCategories = await CabinetCategories.findAll({
+        const { count, rows: cabinetCategories } = await CabinetCategories.findAndCountAll({
             include: [{
                 model: CabinetSubCategories,
                 as: 'subCategories',
             }],
             offset,
             limit,
-            where: whereConditions
+            where: whereConditions,
+            distinct: true // <-- Fixes inflated count
         });
-        res.status(200).json(cabinetCategories);
+        res.status(200).json({ cabinetCategories, total: count });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

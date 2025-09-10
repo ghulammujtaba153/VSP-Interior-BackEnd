@@ -20,6 +20,13 @@ import CabinetQuoteModel from './cabinetQuote.model.js';
 import CabinetMaterialModel from './cabinetMaterial.model.js';
 import PriceBookCategoryModel from './priceBookCategory.model.js';
 import PriceBookModel from './priceBook.model.js';
+import WorkerModel from './worker.model.js';
+import projectModel from './project.model.js';
+import inventoryAllocationModel from './inventoryAllocation.js';
+import projectWorkerModel from './projectWorker.model.js';
+
+
+
 dotenv.config();
 
 const isSupabase = !!process.env.DATABASE_URL;
@@ -54,6 +61,13 @@ const CabinetQuote = CabinetQuoteModel(sequelize, Sequelize.DataTypes)
 const CabinetMaterial = CabinetMaterialModel(sequelize, Sequelize.DataTypes)
 const PriceBookCategory = PriceBookCategoryModel(sequelize, Sequelize.DataTypes)
 const PriceBook = PriceBookModel(sequelize, Sequelize.DataTypes)
+const Worker = WorkerModel(sequelize, Sequelize.DataTypes)
+const Project = projectModel(sequelize, Sequelize.DataTypes);
+const InventoryAllocation = inventoryAllocationModel(sequelize, Sequelize.DataTypes);
+const ProjectWorker = projectWorkerModel(sequelize, Sequelize.DataTypes);
+
+
+
 // Prepare DB object
 const db = {
   User,
@@ -74,6 +88,10 @@ const db = {
   CabinetMaterial,
   PriceBookCategory,
   PriceBook,
+  Worker,
+  Project,
+  InventoryAllocation,
+  ProjectWorker,
   sequelize,
   Sequelize,
 };

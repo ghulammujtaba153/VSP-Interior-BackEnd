@@ -86,12 +86,12 @@ export default (sequelize, DataTypes) => {
   // 🔹 Associations
   Project.associate = (models) => {
     // Each project can have many workers assigned
-    Project.belongsTo(models.Worker, {
-      foreignKey: "projectId",
-      as: "assignedWorkers",
-      onDelete: "CASCADE",
-      onUpdate: "CASCADE",
-    });
+    Project.hasMany(models.ProjectWorker, {
+    foreignKey: "projectId",
+    as: "workers",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
 
     // Each project belongs to a client
     Project.belongsTo(models.Clients, {
@@ -102,7 +102,7 @@ export default (sequelize, DataTypes) => {
     // Link with inventory for material allocation
     Project.hasMany(models.InventoryAllocation, {
       foreignKey: "projectId",
-      as: "inventoryAllocations",
+      as: "allocations",
     });
   };
 

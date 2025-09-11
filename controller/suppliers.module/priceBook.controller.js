@@ -1,5 +1,5 @@
 import db from '../../models/index.js';
-const { PriceBook, PriceBookCategory } = db;
+const { PriceBook, PriceBookCategory, Suppliers } = db;
 
 
 export const createPriceBook = async (req, res) => {
@@ -92,7 +92,14 @@ export const getPriceBook = async (req, res) => {
             where: {
                 priceBookCategoryId: req.params.id
             },
-            include: [{ model: PriceBookCategory }]
+            include: [{ model: PriceBookCategory,
+                include: [
+            {
+              model: Suppliers,
+              attributes: ["id", "name", "email", "phone"],
+            },
+          ],
+             }]
         });
         res.status(200).json(priceBook);
     } catch (error) {

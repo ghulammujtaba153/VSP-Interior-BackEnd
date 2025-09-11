@@ -76,17 +76,70 @@ export const insertCabinet = async (req, res) => {
   }
 };
 
+// export const getCabinet = async (req, res) => {
+//   const { page = 1, limit = 10, search = "", subCode = "" } = req.query;
+//   const offset = (page - 1) * limit;
+//   const whereConditions = {};
+//   const { id } = req.params;
+//   whereConditions.cabinetCategoryId = id; // Filter by category ID
+
+//   if (search && search.trim() !== "") {
+//     whereConditions[db.Sequelize.Op.or] = [
+//       { code: { [db.Sequelize.Op.iLike]: `%${search}%` } },
+
+//       { description: { [db.Sequelize.Op.iLike]: `%${search}%` } },
+//     ];
+//   }
+
+//   try {
+//     const { count, rows: cabinets } = await Cabinet.findAndCountAll({
+//       where: whereConditions,
+//       offset,
+//       limit,
+//       include: [
+//         {
+//           model: CabinetCategories,
+//           as: "cabinetCategory",
+//         },
+//         {
+//           model: CabinetSubCategories,
+//           as: "cabinetSubCategory",
+//         },
+//       ],
+//       distinct: true, // ✅ makes sure count isn’t inflated
+//     });
+
+//     res.status(200).json({
+//       message: "Cabinets fetched successfully",
+//       cabinets, // ✅ array of cabinets
+//       total: count, // ✅ correct count
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       message: "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
 export const getCabinet = async (req, res) => {
-  const { page = 1, limit = 10, search = "" } = req.query;
+  const { page = 1, limit = 10, search = "", subCode = "" } = req.query;
   const offset = (page - 1) * limit;
   const whereConditions = {};
   const { id } = req.params;
   whereConditions.cabinetCategoryId = id; // Filter by category ID
 
+  // Add subcategory code filter if provided
+  if (subCode && subCode.trim() !== "") {
+    whereConditions['$cabinetSubCategory.name$'] = { 
+      [db.Sequelize.Op.iLike]: `%${subCode}%` 
+    };
+  }
+
   if (search && search.trim() !== "") {
     whereConditions[db.Sequelize.Op.or] = [
       { code: { [db.Sequelize.Op.iLike]: `%${search}%` } },
-
       { description: { [db.Sequelize.Op.iLike]: `%${search}%` } },
     ];
   }
@@ -106,13 +159,13 @@ export const getCabinet = async (req, res) => {
           as: "cabinetSubCategory",
         },
       ],
-      distinct: true, // ✅ makes sure count isn’t inflated
+      distinct: true,
     });
 
     res.status(200).json({
       message: "Cabinets fetched successfully",
-      cabinets, // ✅ array of cabinets
-      total: count, // ✅ correct count
+      cabinets,
+      total: count,
     });
   } catch (error) {
     res.status(500).json({

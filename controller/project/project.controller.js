@@ -119,7 +119,8 @@ export const getProjectById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const project = await Project.findByPk(id, {
+    const project = await Project.findOne({
+      where: { id },
       include: [
         { model: Clients, as: "clientDetails" },
         {
@@ -133,18 +134,27 @@ export const getProjectById = async (req, res) => {
           include: [{ model: db.Inventory, as: "material" }], // ✅ material details
         },
       ],
+      order: [["createdAt", "DESC"]], // keep same ordering style as list API
     });
 
     if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    res.status(200).json(project);
+    res.status(200).json({
+      success: true,
+      project,
+    });
   } catch (error) {
     console.error("Error fetching project by ID:", error);
-    res.status(500).json({ message: "Server Error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
   }
 };
+
 
 
 // ✅ Update project with client and details

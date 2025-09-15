@@ -130,12 +130,19 @@ export const getCabinet = async (req, res) => {
   const { id } = req.params;
   whereConditions.cabinetCategoryId = id; // Filter by category ID
 
-  // Add subcategory code filter if provided
-  if (subCode && subCode.trim() !== "") {
-    whereConditions['$cabinetSubCategory.name$'] = { 
-      [db.Sequelize.Op.iLike]: `%${subCode}%` 
-    };
-  }
+  let subCodeStr = "";
+if (Array.isArray(subCode)) {
+  // Take the last non-empty one
+  subCodeStr = subCode.find((s) => s && s.trim()) || "";
+} else {
+  subCodeStr = subCode || "";
+}
+
+if (subCodeStr.trim() !== "") {
+  whereConditions["$cabinetSubCategory.name$"] = {
+    [db.Sequelize.Op.iLike]: `%${subCodeStr.trim()}%`,
+  };
+}
 
   if (search && search.trim() !== "") {
     whereConditions[db.Sequelize.Op.or] = [

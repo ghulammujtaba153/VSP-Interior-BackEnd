@@ -93,6 +93,13 @@ export default (sequelize, DataTypes) => {
     onUpdate: "CASCADE",
   });
 
+  Project.hasMany(models.ProjectManagement, {
+    foreignKey: "projectId",
+    as: "tasks",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
+
     // Each project belongs to a client
     Project.belongsTo(models.Clients, {
       foreignKey: "clientId",

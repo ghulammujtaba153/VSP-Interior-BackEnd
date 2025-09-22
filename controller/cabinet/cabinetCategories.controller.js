@@ -45,6 +45,27 @@ export const getCabinetCategories = async (req, res) => {
 
 
 
+
+export const getCabinetCategory = async (req, res) => {
+    const {id} = req.params;
+
+    
+
+    try {
+        const cabinetCategory = await CabinetCategories.findByPk(id, {
+            include: [{
+                model: CabinetSubCategories,
+                as: 'subCategories',
+            }],
+        });
+        res.status(200).json(cabinetCategory);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
+
+
 export const updateCabinetCategory = async (req, res) => {
     try {
     const cabinetCategory = await CabinetCategories.update(req.body, { where: { id: req.params.id } });

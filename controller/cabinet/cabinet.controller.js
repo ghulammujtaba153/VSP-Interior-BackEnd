@@ -148,6 +148,7 @@ if (subCodeStr.trim() !== "") {
     whereConditions[db.Sequelize.Op.or] = [
       { code: { [db.Sequelize.Op.iLike]: `%${search}%` } },
       { description: { [db.Sequelize.Op.iLike]: `%${search}%` } },
+      { "$cabinetSubCategory.name$": { [db.Sequelize.Op.iLike]: `%${search}%` } }
     ];
   }
 
@@ -181,6 +182,9 @@ if (subCodeStr.trim() !== "") {
     });
   }
 };
+
+
+
 
 export const updateCabinet = async (req, res) => {
   try {

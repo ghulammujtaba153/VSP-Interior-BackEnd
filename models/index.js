@@ -25,6 +25,7 @@ import projectModel from './project.model.js';
 import inventoryAllocationModel from './inventoryAllocation.js';
 import projectWorkerModel from './projectWorker.model.js';
 import projectManangementModel from './projectManangement.model.js';
+import employeeLeave from './employeeLeave.js';
 
 
 dotenv.config();
@@ -66,6 +67,7 @@ const Project = projectModel(sequelize, Sequelize.DataTypes);
 const InventoryAllocation = inventoryAllocationModel(sequelize, Sequelize.DataTypes);
 const ProjectWorker = projectWorkerModel(sequelize, Sequelize.DataTypes);
 const ProjectManagement = projectManangementModel(sequelize, Sequelize.DataTypes);
+const EmployeeLeave = employeeLeave(sequelize, Sequelize.DataTypes);
 
 
 
@@ -94,6 +96,7 @@ const db = {
   InventoryAllocation,
   ProjectWorker,
   ProjectManagement,
+  EmployeeLeave,
   sequelize,
   Sequelize,
 };

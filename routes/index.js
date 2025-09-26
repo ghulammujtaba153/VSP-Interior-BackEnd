@@ -19,6 +19,7 @@ import priceBookCategoryRouter from "./suppliers.module.js/priceBookCategory.rou
 import workerRouter from "./worker/worker.routes.js";
 import projectRouter from "./project/project.routes.js";
 import projectManagementRouter from "./project/projectManagement.routes.js";
+import employeeRouter from "./employeeLeave/employeeLeave.routes.js";
 
 const router = express.Router();
 
@@ -42,5 +43,6 @@ router.use('/pricebook', priceBookRouter);
 router.use('/workers', workerRouter);
 router.use('/projects', projectRouter);
 router.use('/project-management', projectManagementRouter);
+router.use('/employee-leave', employeeRouter);
 
 export default router;

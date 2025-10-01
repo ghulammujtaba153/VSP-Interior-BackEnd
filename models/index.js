@@ -29,6 +29,7 @@ import employeeLeave from './employeeLeave.js';
 import projectSetupModel from './projectSetup.model.js';
 import projectRateModel from './projectRate.model.js';
 import projectMaterialModel from './projectMaterial.model.js';
+import projectVariationModel from './projectVariation.model.js';
 
 
 dotenv.config();
@@ -74,6 +75,7 @@ const EmployeeLeave = employeeLeave(sequelize, Sequelize.DataTypes);
 const ProjectSetup = projectSetupModel(sequelize, Sequelize.DataTypes);
 const ProjectRate = projectRateModel(sequelize, Sequelize.DataTypes);
 const ProjectMaterial = projectMaterialModel(sequelize, Sequelize.DataTypes);
+const ProjectVariation = projectVariationModel(sequelize, Sequelize.DataTypes);
 
 
 
@@ -106,6 +108,7 @@ const db = {
   ProjectSetup,
   ProjectRate,
   ProjectMaterial,
+  ProjectVariation,
   sequelize,
   Sequelize,
 };

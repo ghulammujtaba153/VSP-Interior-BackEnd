@@ -59,6 +59,12 @@ export default (sequelize, DataTypes) => {
             as: 'priceBookCategory',
             onDelete: 'CASCADE',
         });
+
+        Supplier.hasMany(models.ProjectMaterial, {
+            foreignKey: 'supplierId',
+            as: 'projectMaterial',
+            onDelete: 'CASCADE',
+        });
     };
 
     return Supplier;

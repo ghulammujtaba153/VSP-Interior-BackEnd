@@ -30,6 +30,7 @@ import projectSetupModel from './projectSetup.model.js';
 import projectRateModel from './projectRate.model.js';
 import projectMaterialModel from './projectMaterial.model.js';
 import projectVariationModel from './projectVariation.model.js';
+import projectAmendModel from './projectAmend.model.js';
 
 
 dotenv.config();
@@ -76,6 +77,7 @@ const ProjectSetup = projectSetupModel(sequelize, Sequelize.DataTypes);
 const ProjectRate = projectRateModel(sequelize, Sequelize.DataTypes);
 const ProjectMaterial = projectMaterialModel(sequelize, Sequelize.DataTypes);
 const ProjectVariation = projectVariationModel(sequelize, Sequelize.DataTypes);
+const ProjectAmend = projectAmendModel(sequelize, Sequelize.DataTypes);
 
 
 
@@ -109,6 +111,7 @@ const db = {
   ProjectRate,
   ProjectMaterial,
   ProjectVariation,
+  ProjectAmend,
   sequelize,
   Sequelize,
 };

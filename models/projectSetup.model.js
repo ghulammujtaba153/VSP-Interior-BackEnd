@@ -23,6 +23,7 @@ export default (sequelize, DataTypes) => {
     ProjectSetup.hasMany(models.ProjectRate, { foreignKey: 'projectId', as: 'rates' });
     ProjectSetup.hasMany(models.ProjectMaterial, { foreignKey: 'projectId', as: 'materials' });
     ProjectSetup.hasMany(models.ProjectVariation, { foreignKey: 'projectId', as: 'variations' });
+    ProjectSetup.hasMany(models.ProjectAmend, { foreignKey: 'projectId', as: 'amends' });
   };
 
   return ProjectSetup;

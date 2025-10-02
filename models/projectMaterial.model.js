@@ -20,6 +20,7 @@ export default (sequelize, DataTypes) => {
 
   ProjectMaterial.associate = (models) => {
     ProjectMaterial.belongsTo(models.ProjectSetup, { foreignKey: 'projectId', as: 'project' });
+    ProjectMaterial.belongsTo(models.Suppliers, { foreignKey: 'supplierId', as: 'supplier' });
   };
 
   return ProjectMaterial;

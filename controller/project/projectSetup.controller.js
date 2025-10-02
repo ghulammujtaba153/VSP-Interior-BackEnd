@@ -1,6 +1,6 @@
 import db from "../../models/index.js";
 
-const { ProjectSetup, ProjectRate, ProjectMaterial, Clients } = db;
+const { ProjectSetup, ProjectRate, ProjectMaterial, Clients, ProjectAmend, Suppliers } = db;
 
 export const createProjectSetup = async (req, res) => {
   const t = await db.sequelize.transaction(); // Start transaction
@@ -127,13 +127,139 @@ export const getProjectSetupById = async (req, res) => {
 
 
 
+// export const updateProjectSetup = async (req, res) => {
+//   const t = await db.sequelize.transaction();
+//   try {
+//     const { id } = req.params;
+//     const { project, rates = [], materials = [], amend } = req.body;
+
+//     const existingProject = await ProjectSetup.findByPk(id, {
+//       include: [
+//         { model: Clients, as: 'client' },
+//     { model: ProjectRate, as: 'rates' },
+//     { model: ProjectMaterial, as: 'materials', include: [{ model: Suppliers, as: 'supplier' }] },
+//   ],
+//     });
+
+//     if (!existingProject) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Project setup not found",
+//       });
+//     }
+
+//     // Create snapshot of previous data
+//     const previousData = {
+//       project: existingProject.toJSON(),
+//       rates: await ProjectRate.findAll({ where: { projectId: id }, raw: true }),
+//       materials: await ProjectMaterial.findAll({ where: { projectId: id }, include: [{ model: Suppliers, as: 'supplier' }], raw: false }),
+//     };
+
+//     // Update main project
+//     project.revision = (existingProject.revision || 0) + 1;
+//     await existingProject.update(project, { transaction: t });
+
+//     // Refresh rates
+//     await ProjectRate.destroy({ where: { projectId: id }, transaction: t });
+//     if (rates.length > 0) {
+//       const ratesData = rates.map((rate) => ({ ...rate, projectId: id }));
+//       await ProjectRate.bulkCreate(ratesData, { transaction: t });
+//     }
+
+//     // Refresh materials
+//     await ProjectMaterial.destroy({ where: { projectId: id }, transaction: t });
+//     if (materials.length > 0) {
+//       const materialsData = materials.map((mat) => ({ ...mat, projectId: id }));
+//       await ProjectMaterial.bulkCreate(materialsData, { transaction: t });
+//     }
+
+//     // Create snapshot of updated data
+//     const updatedData = {
+//       project,
+//       rates,
+//       materials,
+//     };
+
+//     // If amend is requested, store amendments
+//     if (amend) {
+//       await ProjectAmend.create(
+//         {
+//           projectId: id,
+//           previousData,
+//           updatedData,
+//         },
+//         { transaction: t }
+//       );
+//     }
+
+//     await t.commit();
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Project setup updated successfully",
+//     });
+//   } catch (error) {
+//     await t.rollback();
+//     console.error(error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Failed to update project setup",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
+// Helper function to take a snapshot of project data (with associations)
+async function getProjectSnapshot(id, transaction) {
+  const project = await ProjectSetup.findByPk(id, {
+    include: [
+      { model: Clients, as: "client" },
+      { model: ProjectRate, as: "rates" },
+      {
+        model: ProjectMaterial,
+        as: "materials",
+        include: [{ model: Suppliers, as: "supplier" }],
+      },
+    ],
+    transaction,
+  });
+
+  return {
+    project: project ? project.toJSON() : null,
+    rates: await ProjectRate.findAll({
+      where: { projectId: id },
+      raw: true,
+      transaction,
+    }),
+    materials: await ProjectMaterial.findAll({
+      where: { projectId: id },
+      include: [{ model: Suppliers, as: "supplier" }],
+      raw: false,
+      transaction,
+    }),
+  };
+}
+
 export const updateProjectSetup = async (req, res) => {
   const t = await db.sequelize.transaction();
   try {
     const { id } = req.params;
-    const { project, rates = [], materials = [] } = req.body;
+    const { project, rates = [], materials = [], amend } = req.body;
 
-    const existingProject = await ProjectSetup.findByPk(id);
+    const existingProject = await ProjectSetup.findByPk(id, {
+      include: [
+        { model: Clients, as: "client" },
+        { model: ProjectRate, as: "rates" },
+        {
+          model: ProjectMaterial,
+          as: "materials",
+          include: [{ model: Suppliers, as: "supplier" }],
+        },
+      ],
+      transaction: t,
+    });
+
     if (!existingProject) {
       return res.status(404).json({
         success: false,
@@ -141,23 +267,40 @@ export const updateProjectSetup = async (req, res) => {
       });
     }
 
-    project.revision= 1;
+    // 1️⃣ Create snapshot of previous data
+    const previousData = await getProjectSnapshot(id, t);
 
-    // Update main project
+    // 2️⃣ Update main project (increment revision)
+    project.revision = (existingProject.revision || 0) + 1;
     await existingProject.update(project, { transaction: t });
 
-    // Refresh rates
+    // 3️⃣ Refresh rates
     await ProjectRate.destroy({ where: { projectId: id }, transaction: t });
     if (rates.length > 0) {
       const ratesData = rates.map((rate) => ({ ...rate, projectId: id }));
       await ProjectRate.bulkCreate(ratesData, { transaction: t });
     }
 
-    // Refresh materials
+    // 4️⃣ Refresh materials
     await ProjectMaterial.destroy({ where: { projectId: id }, transaction: t });
     if (materials.length > 0) {
       const materialsData = materials.map((mat) => ({ ...mat, projectId: id }));
       await ProjectMaterial.bulkCreate(materialsData, { transaction: t });
+    }
+
+    // 5️⃣ Create snapshot of updated data
+    const updatedData = await getProjectSnapshot(id, t);
+
+    // 6️⃣ If amend flag is true, store amendments
+    if (amend) {
+      await ProjectAmend.create(
+        {
+          projectId: id,
+          previousData,
+          updatedData,
+        },
+        { transaction: t }
+      );
     }
 
     await t.commit();
@@ -176,6 +319,39 @@ export const updateProjectSetup = async (req, res) => {
     });
   }
 };
+
+
+export const getProjectAmend = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const projectAmend = await ProjectAmend.findAll({
+  where: { projectId: id },
+  include: [
+    { model: ProjectSetup, as: 'project' },
+  ],
+});
+
+    if (!projectAmend) {
+      return res.status(404).json({
+        success: false,
+        message: "Project amendment not found",
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: projectAmend
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to get project amendment",
+      error: error.message,
+    })
+  }
+}
+
 
 export const deleteProjectSetup = async (req, res) => {
   const t = await db.sequelize.transaction();

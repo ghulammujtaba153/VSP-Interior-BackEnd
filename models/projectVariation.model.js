@@ -12,6 +12,10 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
+      description: {
+        type: DataTypes.STRING, // [{ name: "extra room", cost: 2000 }, { name: "balcony", cost: 1500 }]
+        allowNull: false,
+      },
       variations: {
         type: DataTypes.JSONB, // [{ name: "extra room", cost: 2000 }, { name: "balcony", cost: 1500 }]
         allowNull: false,

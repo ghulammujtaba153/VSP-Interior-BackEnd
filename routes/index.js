@@ -22,6 +22,7 @@ import projectManagementRouter from "./project/projectManagement.routes.js";
 import employeeRouter from "./employeeLeave/employeeLeave.routes.js";
 import projectSetupRouter from "./project/projectSetup.routes.js";
 import projectVariationRouter from "./project/projectVariation.routes.js";
+import employeeTimeSheetRouter from "./human-resource/employeeTimeSheet.routes.js";
 
 const router = express.Router();
 
@@ -48,5 +49,6 @@ router.use('/project-management', projectManagementRouter);
 router.use('/employee-leave', employeeRouter);
 router.use('/project-setup', projectSetupRouter);
 router.use('/project-variation', projectVariationRouter);
+router.use("/employee-timesheet", employeeTimeSheetRouter);
 
 export default router;

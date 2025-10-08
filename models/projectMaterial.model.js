@@ -8,8 +8,28 @@ export default (sequelize, DataTypes) => {
     },
     projectId: { type: DataTypes.INTEGER, allowNull: false },
     supplierId: { type: DataTypes.INTEGER, allowNull: true },
-    finishMaterial: { type: DataTypes.STRING },
-    materialType: { type: DataTypes.STRING },
+    finishMaterial: { type: DataTypes.STRING,
+      set(value) {
+        if (typeof value === 'string' && value.length > 0) {
+          const formatted =
+            value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+          this.setDataValue('finishMaterial', formatted);
+        } else {
+          this.setDataValue('finishMaterial', value);
+        }
+      },
+    },
+    materialType: { type: DataTypes.STRING,
+      set(value) {
+        if (typeof value === 'string' && value.length > 0) {
+          const formatted =
+            value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+          this.setDataValue('materialType', formatted);
+        } else {
+          this.setDataValue('materialType', value);
+        }
+      },
+    },
     measure: { type: DataTypes.STRING }, // e.g., M2/LM
     materialCost: { type: DataTypes.FLOAT, defaultValue: 0 },
     edgingCost: { type: DataTypes.FLOAT, defaultValue: 0 },

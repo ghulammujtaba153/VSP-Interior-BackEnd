@@ -12,6 +12,15 @@ export default (sequelize, DataTypes) => {
         message: {
           type: DataTypes.STRING(255),
           allowNull: false,
+          set(value) {
+            if (typeof value === 'string' && value.length > 0) {
+              const formatted =
+                value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+              this.setDataValue('message', formatted);
+            } else {
+              this.setDataValue('message', value);
+            }
+          },
         },
         seen: {
           type: DataTypes.BOOLEAN,

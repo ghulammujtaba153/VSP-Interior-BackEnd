@@ -10,13 +10,40 @@ export default (sequelize, DataTypes) => {
             allowNull: false,
         },
         firstName: {
-            type: DataTypes.STRING
+            type: DataTypes.STRING,
+            set(value) {
+                if (typeof value === 'string' && value.length > 0) {
+                    const formatted =
+                      value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+                    this.setDataValue('firstName', formatted);
+                } else {
+                    this.setDataValue('firstName', value);
+                }
+            },
         },
         lastName: {
-            type: DataTypes.STRING
+            type: DataTypes.STRING,
+            set(value) {
+                if (typeof value === 'string' && value.length > 0) {
+                    const formatted =
+                      value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+                    this.setDataValue('lastName', formatted);
+                } else {
+                    this.setDataValue('lastName', value);
+                }
+            },
         },
         role: {
-            type: DataTypes.STRING
+            type: DataTypes.STRING,
+            set(value) {
+                if (typeof value === 'string' && value.length > 0) {
+                    const formatted =
+                      value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+                    this.setDataValue('role', formatted);
+                } else {
+                    this.setDataValue('role', value);
+                }
+            },
         },
         emailAddress: {
             type: DataTypes.STRING,

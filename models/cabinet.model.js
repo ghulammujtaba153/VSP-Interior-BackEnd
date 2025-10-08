@@ -23,6 +23,15 @@ export default (sequelize, DataTypes) => {
         description: {
           type: DataTypes.STRING,
           allowNull: true,
+          set(value) {
+            if (typeof value === 'string' && value.length > 0) {
+              const formatted =
+                value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+              this.setDataValue('description', formatted);
+            } else {
+              this.setDataValue('description', value);
+            }
+          },
         },
         dynamicData: {
           type: DataTypes.JSONB, // ✅ Flexible dynamic fields

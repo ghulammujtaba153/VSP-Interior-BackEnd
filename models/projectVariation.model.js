@@ -15,6 +15,15 @@ export default (sequelize, DataTypes) => {
       description: {
         type: DataTypes.STRING, // [{ name: "extra room", cost: 2000 }, { name: "balcony", cost: 1500 }]
         allowNull: false,
+        set(value) {
+          if (typeof value === 'string' && value.length > 0) {
+            const formatted =
+              value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+            this.setDataValue('description', formatted);
+          } else {
+            this.setDataValue('description', value);
+          }
+        },
       },
       variations: {
         type: DataTypes.JSONB, // [{ name: "extra room", cost: 2000 }, { name: "balcony", cost: 1500 }]

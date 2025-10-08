@@ -1,5 +1,5 @@
 import express from 'express';
-import { createProjectSetup, deleteProjectSetup, getAllProjectSetups, getProjectAmend, getProjectSetupById, updateProjectSetup } from '../../controller/project/projectSetup.controller.js';
+import { createProjectSetup, deleteProjectSetup, getAllProjectSetups, getProjectAmend, getProjectSetupById, updateProjectSetup, updateStatus } from '../../controller/project/projectSetup.controller.js';
 
 
 const projectSetupRouter = express.Router();
@@ -12,5 +12,6 @@ projectSetupRouter.get('/get/:id', getProjectSetupById);
 projectSetupRouter.get('/get/amend/:id', getProjectAmend)
 projectSetupRouter.put('/update/:id', updateProjectSetup);
 projectSetupRouter.delete('/delete/:id', deleteProjectSetup);
+projectSetupRouter.put('/update/status/:id', updateStatus);
 
 export default projectSetupRouter;

@@ -29,6 +29,15 @@ export default (sequelize, DataTypes) => {
       },
       reason: {
         type: DataTypes.STRING,
+        set(value) {
+          if (typeof value === 'string' && value.length > 0) {
+            const formatted =
+              value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+            this.setDataValue('reason', formatted);
+          } else {
+            this.setDataValue('reason', value);
+          }
+        },
       }
     }, {
       tableName: 'employee_leaves',

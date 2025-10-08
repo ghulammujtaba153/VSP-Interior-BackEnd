@@ -385,3 +385,31 @@ export const deleteProjectSetup = async (req, res) => {
     });
   }
 };
+
+
+
+export const updateStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  try {
+    const projectSetup = await ProjectSetup.findByPk(id);
+    if (!projectSetup) {
+      return res.status(404).json({
+        success: false,
+        message: "Project setup not found",
+      });
+    }
+    projectSetup.status = status;
+    await projectSetup.save();
+    return res.status(200).json({
+      success: true,
+      message: "Project setup status updated successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to update project setup status",
+      error: error.message,
+    })
+  }
+}

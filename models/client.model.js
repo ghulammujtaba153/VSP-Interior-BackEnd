@@ -10,7 +10,16 @@ export default (sequelize, DataTypes) => {
       },
       companyName: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        set(value) {
+          if (typeof value === 'string' && value.length > 0) {
+            const formatted =
+              value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+            this.setDataValue('companyName', formatted);
+          } else {
+            this.setDataValue('companyName', value);
+          }
+        },
       },
       emailAddress: {
         type: DataTypes.STRING,
@@ -22,7 +31,16 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.STRING
       },
       address: {
-        type: DataTypes.TEXT
+        type: DataTypes.TEXT,
+        set(value) {
+          if (typeof value === 'string' && value.length > 0) {
+            const formatted =
+              value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+            this.setDataValue('address', formatted);
+          } else {
+            this.setDataValue('address', value);
+          }
+        },
       },
       postCode: {
         type: DataTypes.STRING
@@ -32,7 +50,16 @@ export default (sequelize, DataTypes) => {
         defaultValue: 'active'
       },
       notes: {
-        type: DataTypes.TEXT
+        type: DataTypes.TEXT,
+        set(value) {
+          if (typeof value === 'string' && value.length > 0) {
+            const formatted =
+              value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+            this.setDataValue('notes', formatted);
+          } else {
+            this.setDataValue('notes', value);
+          }
+        },
       },
       isCompany:{
         type: DataTypes.BOOLEAN,

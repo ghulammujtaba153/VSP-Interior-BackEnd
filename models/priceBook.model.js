@@ -16,10 +16,28 @@ export default (sequelize, DataTypes) => {
         name: {
             type: DataTypes.STRING,
             allowNull: false,
+            set(value) {
+                if (typeof value === 'string' && value.length > 0) {
+                    const formatted =
+                      value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+                    this.setDataValue('name', formatted);
+                } else {
+                    this.setDataValue('name', value);
+                }
+            },
         },
         description: {
             type: DataTypes.STRING,
             allowNull: true,
+            set(value) {
+                if (typeof value === 'string' && value.length > 0) {
+                    const formatted =
+                      value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+                    this.setDataValue('description', formatted);
+                } else {
+                    this.setDataValue('description', value);
+                }
+            },
         },
         unit: {
             type: DataTypes.STRING,

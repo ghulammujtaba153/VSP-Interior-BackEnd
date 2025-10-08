@@ -19,7 +19,7 @@ export const importCSV = async (req, res) => {
 
         // Fetch existing clients (companyName + emailAddress)
         const existingClients = await Clients.findAll({
-            attributes: ["companyName", "emailAddress"]
+            attributes: ["id", "companyName", "emailAddress"]
         });
 
         const existingCompanyNames = new Set(existingClients.map(e => e.companyName));
@@ -35,23 +35,51 @@ export const importCSV = async (req, res) => {
         );
 
         let insertedClients = [];
+        let totalContactsInserted = 0;
+        
         if (uniqueClients.length > 0) {
+            // Insert clients first
             insertedClients = await Clients.bulkCreate(
-                uniqueClients.map(row => ({ ...row }))
+                uniqueClients.map(row => {
+                    const { contacts, ...clientData } = row;
+                    return clientData;
+                })
             );
+
+            // Now insert contacts for each client
+            for (let i = 0; i < insertedClients.length; i++) {
+                const client = insertedClients[i];
+                const clientData = uniqueClients[i];
+                
+                if (clientData.contacts && Array.isArray(clientData.contacts) && clientData.contacts.length > 0) {
+                    // Add clientId to each contact
+                    const contactsWithClientId = clientData.contacts.map(contact => ({
+                        ...contact,
+                        clientId: client.id
+                    }));
+                    
+                    // Insert contacts for this client
+                    const insertedContacts = await Contacts.bulkCreate(contactsWithClientId);
+                    totalContactsInserted += insertedContacts.length;
+                }
+            }
 
             // Audit log only if something new was added
             await Audit.create({
                 userId,
                 action: "import",
                 tableName: "clients",
-                newData: insertedClients
+                newData: {
+                    clients: insertedClients,
+                    contactsCount: totalContactsInserted
+                }
             });
         }
 
         res.status(201).json({
-            message: "Clients processed successfully, added: " + insertedClients.length + " new clients.", "skipped": clients.length - insertedClients.length,
+            message: `Successfully imported ${insertedClients.length} clients with ${totalContactsInserted} contacts. Skipped ${clients.length - insertedClients.length} duplicates.`,
             inserted: insertedClients.length,
+            contactsInserted: totalContactsInserted,
             skipped: clients.length - insertedClients.length,
         });
     } catch (error) {

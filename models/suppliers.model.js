@@ -10,6 +10,15 @@ export default (sequelize, DataTypes) => {
         name: {
             type: DataTypes.STRING,
             allowNull: false,
+            set(value) {
+                if (typeof value === 'string' && value.length > 0) {
+                    const formatted =
+                      value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+                    this.setDataValue('name', formatted);
+                } else {
+                    this.setDataValue('name', value);
+                }
+            },
         },
         email: {
             type: DataTypes.STRING,
@@ -33,11 +42,17 @@ export default (sequelize, DataTypes) => {
         },
         notes: {
             type: DataTypes.STRING,
+            set(value) {
+                if (typeof value === 'string' && value.length > 0) {
+                    const formatted =
+                      value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+                    this.setDataValue('notes', formatted);
+                } else {
+                    this.setDataValue('notes', value);
+                }
+            },
         },
 
-    }, {
-        timestamps: true,
-        tableName: 'suppliers',
     });
 
     Supplier.associate = (models) => {

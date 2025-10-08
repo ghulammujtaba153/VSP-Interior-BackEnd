@@ -1,6 +1,6 @@
 import db from '../../models/index.js';
 import { Sequelize, Op } from "sequelize";
-const {Inventory, Audit} = db;
+const {Inventory, Audit, Suppliers} = db;
 
 export const createInventory = async (req, res) => {
     try {
@@ -20,60 +20,130 @@ export const createInventory = async (req, res) => {
 }
 
 
+
 export const importCSV = async (req, res) => {
-    try {
-        const { inventory, userId } = req.body;
+  try {
+    const { inventory, userId } = req.body;
 
-        if (!Array.isArray(inventory) || inventory.length === 0) {
-            return res.status(400).json({ message: "Invalid data format" });
-        }
-
-        // Deduplicate incoming records by name (keep first occurrence)
-        const uniqueByName = [];
-        const seen = new Set();
-        for (const item of inventory) {
-            const name = item?.name?.trim();
-            if (name && !seen.has(name)) {
-                uniqueByName.push(item);
-                seen.add(name);
-            }
-        }
-
-        // Fetch existing inventory names from DB
-        const existing = await Inventory.findAll({ attributes: ["name"] });
-        const existingNames = new Set(existing.map(e => e.name));
-
-        // Filter out names that already exist
-        const toInsert = uniqueByName.filter(item => !existingNames.has(item.name));
-
-        // Insert only unique, non-existing items
-        const created = toInsert.length > 0
-            ? await Inventory.bulkCreate(toInsert, { returning: true })
-            : [];
-
-        // Audit
-        await Audit.create({ userId, action: 'import', tableName: 'inventory', newData: created.map(r => r.get ? r.get() : r) });
-
-        const insertedCount = created.length;
-        const duplicateCount = inventory.length - insertedCount;
-
-        return res.status(201).json({
-            message: `Inventory processed: inserted ${insertedCount}, skipped ${duplicateCount} duplicate${duplicateCount === 1 ? '' : 's'}.`,
-            insertedCount,
-            duplicateCount,
-            inventory: created,
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+    // 1️⃣ Validate input
+    if (!Array.isArray(inventory) || inventory.length === 0) {
+      return res.status(400).json({ message: "Invalid data format" });
     }
-}
+
+    // 2️⃣ Fetch all suppliers (only id & name)
+    const allSuppliers = await Suppliers.findAll({});
+    console.log("allSuppliers", allSuppliers);
+
+    // Map supplier name → supplierId
+    const supplierNameToId = new Map();
+    allSuppliers.forEach(({ id, name }) => {
+      if (name) supplierNameToId.set(name.toLowerCase().trim(), id);
+    });
+
+    // 3️⃣ Process each inventory item
+    const processedInventory = [];
+    const invalidSuppliers = [];
+    const skippedSuppliers = [];
+
+    for (const item of inventory) {
+      const supplierName = item?.supplierName?.trim();
+
+      if (!supplierName) {
+        invalidSuppliers.push({
+          itemName: item.name || "(unnamed)",
+          supplierName: "(empty/missing)",
+        });
+        continue;
+      }
+
+      const supplierId = supplierNameToId.get(supplierName.toLowerCase());
+
+      if (supplierId) {
+        // Ensure supplier still exists in DB (safety check)
+        const exists = allSuppliers.find((s) => s.id === supplierId);
+        if (!exists) {
+          skippedSuppliers.push({
+            itemName: item.name,
+            supplierName,
+            reason: `Supplier ID ${supplierId} not found in DB`,
+          });
+          continue;
+        }
+
+        const { supplierName: _, ...restItem } = item;
+        processedInventory.push({
+          ...restItem,
+          supplierId,
+        });
+      } else {
+        skippedSuppliers.push({
+          itemName: item.name,
+          supplierName,
+          reason: "Supplier not found in DB",
+        });
+      }
+    }
+
+    // 4️⃣ Deduplicate by name
+    const uniqueByName = [];
+    const seen = new Set();
+    for (const item of processedInventory) {
+      const name = item?.name?.trim()?.toLowerCase();
+      if (name && !seen.has(name)) {
+        uniqueByName.push(item);
+        seen.add(name);
+      }
+    }
+    console.log("processedInventory", processedInventory);
+    // 5️⃣ Filter out existing inventory names
+    const existing = await Inventory.findAll({ attributes: ["name"], raw: true });
+    const existingNames = new Set(existing.map((e) => e.name.toLowerCase().trim()));
+    console.log("existingNames", existingNames);
+    const toInsert = uniqueByName.filter(
+      (item) => !existingNames.has(item.name.toLowerCase().trim())
+    );
+
+    console.log("toInsert", toInsert);
+
+    // 6️⃣ Insert new inventory
+    const created =
+      toInsert.length > 0
+        ? await Inventory.bulkCreate(toInsert, { returning: true })
+        : [];
+
+    // 7️⃣ Audit log
+    await Audit.create({
+      userId,
+      action: "import",
+      tableName: "inventory",
+      newData: created.map((r) => (r.get ? r.get() : r)),
+    });
+
+    // 8️⃣ Prepare result
+    return res.status(201).json({
+      message: `Inventory import completed: ${created.length} inserted, ${skippedSuppliers.length} skipped.`,
+      insertedCount: created.length,
+      skippedCount: skippedSuppliers.length,
+      skippedSuppliers,
+      inventory: created,
+    });
+  } catch (error) {
+    console.error("❌ Error importing CSV:", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
 
 
 
 export const getInventory = async (req, res) => {
-  const { page = 1, limit = 10, search = "" } = req.query;
+  const { page = 1, limit = 10, search = "", supplierId = null } = req.query;
   const offset = (page - 1) * limit;
   const whereConditions = {};
+
+
+  if (supplierId && supplierId.trim() !== "") {
+    whereConditions.supplierId = supplierId;
+  }
 
   if (search && search.trim() !== "") {
     whereConditions[Op.or] = [
@@ -90,6 +160,7 @@ export const getInventory = async (req, res) => {
         Sequelize.cast(Sequelize.col("quantity"), "TEXT"),
         { [Op.iLike]: `%${search}%` }
       ),
+
     ];
   }
 

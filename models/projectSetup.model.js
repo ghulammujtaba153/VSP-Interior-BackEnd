@@ -6,13 +6,57 @@ export default (sequelize, DataTypes) => {
       autoIncrement: true,
       primaryKey: true,
     },
-    projectName: { type: DataTypes.STRING, allowNull: false },
-    siteLocation: { type: DataTypes.STRING, allowNull: false },
-    accessNotes: { type: DataTypes.TEXT },
+    projectName: { type: DataTypes.STRING, allowNull: false,
+      set(value) {
+        if (typeof value === 'string' && value.length > 0) {
+          const formatted =
+            value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+          this.setDataValue('projectName', formatted);
+        } else {
+          this.setDataValue('projectName', value);
+        }
+      },
+    },
+    siteLocation: { type: DataTypes.STRING, allowNull: false,
+      set(value) {
+        if (typeof value === 'string' && value.length > 0) {
+          const formatted =
+            value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+          this.setDataValue('siteLocation', formatted);
+        } else {
+          this.setDataValue('siteLocation', value);
+        }
+      },
+    },
+    accessNotes: { type: DataTypes.TEXT,
+      set(value) {
+        if (typeof value === 'string' && value.length > 0) {
+          const formatted =
+            value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+          this.setDataValue('accessNotes', formatted);
+        } else {
+          this.setDataValue('accessNotes', value);
+        }
+      },
+    },
     clientId: { type: DataTypes.INTEGER, allowNull: false },
-    qsName: { type: DataTypes.STRING },
+    qsName: { type: DataTypes.STRING,
+      set(value) {
+        if (typeof value === 'string' && value.length > 0) {
+          const formatted =
+            value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+          this.setDataValue('qsName', formatted);
+        } else {
+          this.setDataValue('qsName', value);
+        }
+      },
+    },
     qsPhone: { type: DataTypes.STRING },
     revision: { type: DataTypes.INTEGER, defaultValue: 0 },
+    status: {
+      type: DataTypes.STRING,
+      defaultValue: 'draft'
+    }
   }, {
     tableName: 'project_setups',
     timestamps: true,

@@ -26,34 +26,64 @@ export const importCSV = async (req, res) => {
 
     try {
         // Get existing suppliers from DB
-        const existingSuppliers = await Suppliers.findAll({ attributes: ["name"] });
+        const existingSuppliers = await Suppliers.findAll({ attributes: ["id", "name", "email"] });
         const existingNames = new Set(existingSuppliers.map(e => e.name));
+        const existingEmails = new Set(existingSuppliers.map(e => e.email));
 
-        // Filter out duplicates
-        const uniqueSuppliers = suppliers.filter(supplier => !existingNames.has(supplier.name));
+        // Filter out duplicates based on name or email
+        const uniqueSuppliers = suppliers.filter(supplier => 
+            !existingNames.has(supplier.name) && 
+            !existingEmails.has(supplier.email)
+        );
 
         let insertedSuppliers = [];
+        let totalContactsInserted = 0;
+        
         if (uniqueSuppliers.length > 0) {
-            insertedSuppliers = await Suppliers.bulkCreate(uniqueSuppliers.map(row => ({ ...row })));
+            // Insert suppliers first
+            insertedSuppliers = await Suppliers.bulkCreate(
+                uniqueSuppliers.map(row => {
+                    const { contacts, ...supplierData } = row;
+                    return supplierData;
+                })
+            );
+
+            // Now insert contacts for each supplier
+            for (let i = 0; i < insertedSuppliers.length; i++) {
+                const supplier = insertedSuppliers[i];
+                const supplierData = uniqueSuppliers[i];
+                
+                if (supplierData.contacts && Array.isArray(supplierData.contacts) && supplierData.contacts.length > 0) {
+                    // Add supplierId to each contact
+                    const contactsWithSupplierId = supplierData.contacts.map(contact => ({
+                        ...contact,
+                        supplierId: supplier.id
+                    }));
+                    
+                    // Insert contacts for this supplier
+                    const insertedContacts = await SupplierContacts.bulkCreate(contactsWithSupplierId);
+                    totalContactsInserted += insertedContacts.length;
+                }
+            }
 
             // Audit log only when new suppliers are added
             await Audit.create({ 
                 userId, 
                 action: 'import', 
                 tableName: 'suppliers', 
-                newData: insertedSuppliers 
+                newData: {
+                    suppliers: insertedSuppliers,
+                    contactsCount: totalContactsInserted
+                }
             });
         }
 
         res.status(201).json({
-  message:
-    "processed successfully, added: " +
-    insertedSuppliers.length +
-    ", skipped: " +
-    (suppliers.length - insertedSuppliers.length),
-  inserted: insertedSuppliers.length,
-  skipped: suppliers.length - insertedSuppliers.length,
-});
+            message: `Successfully imported ${insertedSuppliers.length} suppliers with ${totalContactsInserted} contacts. Skipped ${suppliers.length - insertedSuppliers.length} duplicates.`,
+            inserted: insertedSuppliers.length,
+            contactsInserted: totalContactsInserted,
+            skipped: suppliers.length - insertedSuppliers.length,
+        });
 
     } catch (error) {
         res.status(500).json({ message: error.message });

@@ -14,6 +14,15 @@ export default (sequelize, DataTypes) => {
       taskName: {
         type: DataTypes.STRING,
         allowNull: false,
+        set(value) {
+          if (typeof value === 'string' && value.length > 0) {
+            const formatted =
+              value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+            this.setDataValue('taskName', formatted);
+          } else {
+            this.setDataValue('taskName', value);
+          }
+        },
       },
       startDate: {
         type: DataTypes.DATE,
@@ -30,6 +39,15 @@ export default (sequelize, DataTypes) => {
       description: {
         type: DataTypes.STRING,
         allowNull: false,
+        set(value) {
+          if (typeof value === 'string' && value.length > 0) {
+            const formatted =
+              value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+            this.setDataValue('description', formatted);
+          } else {
+            this.setDataValue('description', value);
+          }
+        },
       },
       priority: {
         type: DataTypes.STRING,

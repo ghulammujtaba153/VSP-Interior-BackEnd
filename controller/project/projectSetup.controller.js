@@ -1,27 +1,76 @@
 import db from "../../models/index.js";
 
-const { ProjectSetup, ProjectRate, ProjectMaterial, Clients, ProjectAmend, Suppliers } = db;
+const { ProjectSetup, ProjectRate, ProjectMaterial, Clients, ProjectAmend, Suppliers, ProjectCostSheet } = db;
+
+// Helper function to convert empty strings to null for integer fields
+const sanitizeData = (data) => {
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeData(item));
+  }
+  
+  if (data && typeof data === 'object') {
+    const sanitized = {};
+    for (const [key, value] of Object.entries(data)) {
+      // Convert empty strings to null for fields that might be integers
+      if (value === "" && (key.toLowerCase().includes('id') || key.toLowerCase().includes('cost') || key.toLowerCase().includes('rate'))) {
+        sanitized[key] = null;
+      } else if (typeof value === 'object') {
+        sanitized[key] = sanitizeData(value);
+      } else {
+        sanitized[key] = value;
+      }
+    }
+    return sanitized;
+  }
+  
+  return data;
+};
+
+// Helper function to check if an object has any non-empty values
+const hasValidData = (obj) => {
+  if (!obj || typeof obj !== 'object') return false;
+  return Object.values(obj).some(value => {
+    if (value === null || value === undefined || value === '') return false;
+    if (typeof value === 'object' && !Array.isArray(value)) return hasValidData(value);
+    return true;
+  });
+};
 
 export const createProjectSetup = async (req, res) => {
   const t = await db.sequelize.transaction(); // Start transaction
   try {
-    const { project, rates = [], materials = [] } = req.body;
+    const { project, rates = [], materials = [], costingSheet = {} } = req.body;
 
     // 1. Create ProjectSetup
     const newProject = await ProjectSetup.create(project, { transaction: t });
 
     const projectId = newProject.id;
 
-    // 2. Create ProjectRates
+    // 2. Create ProjectRates (sanitize data and filter empty records)
     if (rates.length > 0) {
-      const ratesData = rates.map((rate) => ({ ...rate, projectId }));
-      await ProjectRate.bulkCreate(ratesData, { transaction: t });
+      const validRates = sanitizeData(rates).filter(rate => hasValidData(rate));
+      if (validRates.length > 0) {
+        const ratesData = validRates.map((rate) => ({ ...rate, projectId }));
+        await ProjectRate.bulkCreate(ratesData, { transaction: t });
+      }
     }
 
-    // 3. Create ProjectMaterials
+    // 3. Create ProjectMaterials (sanitize data and filter empty records)
     if (materials.length > 0) {
-      const materialsData = materials.map((mat) => ({ ...mat, projectId }));
-      await ProjectMaterial.bulkCreate(materialsData, { transaction: t });
+      const validMaterials = sanitizeData(materials).filter(mat => hasValidData(mat));
+      if (validMaterials.length > 0) {
+        const materialsData = validMaterials.map((mat) => ({ ...mat, projectId }));
+        await ProjectMaterial.bulkCreate(materialsData, { transaction: t });
+      }
+    }
+
+    // 4. Create ProjectCostSheet (sanitize data)
+    if (costingSheet && Object.keys(costingSheet).length > 0) {
+      const sanitizedCostingSheet = sanitizeData(costingSheet);
+      await ProjectCostSheet.create(
+        { ...sanitizedCostingSheet, projectId },
+        { transaction: t }
+      );
     }
 
     // Commit transaction
@@ -34,6 +83,7 @@ export const createProjectSetup = async (req, res) => {
         project: newProject,
         rates,
         materials,
+        costingSheet,
       },
     });
   } catch (error) {
@@ -65,6 +115,7 @@ export const getAllProjectSetups = async (req, res) => {
         { model: Clients, as: "client" },
         { model: ProjectRate, as: "rates" },
         { model: ProjectMaterial, as: "materials" },
+        { model: ProjectCostSheet, as: "costingSheet" },
       ],
       where: whereConditions,
       order: [["createdAt", "DESC"]],
@@ -100,6 +151,7 @@ export const getProjectSetupById = async (req, res) => {
         { model: Clients, as: "client" },
         { model: ProjectRate, as: "rates" },
         { model: ProjectMaterial, as: "materials" },
+        { model: ProjectCostSheet, as: "costingSheet" },
       ],
     });
 
@@ -221,7 +273,14 @@ async function getProjectSnapshot(id, transaction) {
         as: "materials",
         include: [{ model: Suppliers, as: "supplier" }],
       },
+      { model: ProjectCostSheet, as: "costingSheet" },
     ],
+    transaction,
+  });
+
+  const costingSheet = await ProjectCostSheet.findOne({
+    where: { projectId: id },
+    raw: true,
     transaction,
   });
 
@@ -238,6 +297,7 @@ async function getProjectSnapshot(id, transaction) {
       raw: false,
       transaction,
     }),
+    costingSheet: costingSheet || null,
   };
 }
 
@@ -245,7 +305,7 @@ export const updateProjectSetup = async (req, res) => {
   const t = await db.sequelize.transaction();
   try {
     const { id } = req.params;
-    const { project, rates = [], materials = [], amend } = req.body;
+    const { project, rates = [], materials = [], costingSheet = {}, amend } = req.body;
 
     const existingProject = await ProjectSetup.findByPk(id, {
       include: [
@@ -256,6 +316,7 @@ export const updateProjectSetup = async (req, res) => {
           as: "materials",
           include: [{ model: Suppliers, as: "supplier" }],
         },
+        { model: ProjectCostSheet, as: "costingSheet" },
       ],
       transaction: t,
     });
@@ -274,24 +335,40 @@ export const updateProjectSetup = async (req, res) => {
     project.revision = (existingProject.revision || 0) + 1;
     await existingProject.update(project, { transaction: t });
 
-    // 3️⃣ Refresh rates
+    // 3️⃣ Refresh rates (sanitize data and filter empty records)
     await ProjectRate.destroy({ where: { projectId: id }, transaction: t });
     if (rates.length > 0) {
-      const ratesData = rates.map((rate) => ({ ...rate, projectId: id }));
-      await ProjectRate.bulkCreate(ratesData, { transaction: t });
+      const validRates = sanitizeData(rates).filter(rate => hasValidData(rate));
+      if (validRates.length > 0) {
+        const ratesData = validRates.map((rate) => ({ ...rate, projectId: id }));
+        await ProjectRate.bulkCreate(ratesData, { transaction: t });
+      }
     }
 
-    // 4️⃣ Refresh materials
+    // 4️⃣ Refresh materials (sanitize data and filter empty records)
     await ProjectMaterial.destroy({ where: { projectId: id }, transaction: t });
     if (materials.length > 0) {
-      const materialsData = materials.map((mat) => ({ ...mat, projectId: id }));
-      await ProjectMaterial.bulkCreate(materialsData, { transaction: t });
+      const validMaterials = sanitizeData(materials).filter(mat => hasValidData(mat));
+      if (validMaterials.length > 0) {
+        const materialsData = validMaterials.map((mat) => ({ ...mat, projectId: id }));
+        await ProjectMaterial.bulkCreate(materialsData, { transaction: t });
+      }
     }
 
-    // 5️⃣ Create snapshot of updated data
+    // 5️⃣ Refresh costing sheet (sanitize data)
+    await ProjectCostSheet.destroy({ where: { projectId: id }, transaction: t });
+    if (costingSheet && Object.keys(costingSheet).length > 0) {
+      const sanitizedCostingSheet = sanitizeData(costingSheet);
+      await ProjectCostSheet.create(
+        { ...sanitizedCostingSheet, projectId: id },
+        { transaction: t }
+      );
+    }
+
+    // 6️⃣ Create snapshot of updated data
     const updatedData = await getProjectSnapshot(id, t);
 
-    // 6️⃣ If amend flag is true, store amendments
+    // 7️⃣ If amend flag is true, store amendments
     if (amend) {
       await ProjectAmend.create(
         {

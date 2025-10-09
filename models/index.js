@@ -32,6 +32,7 @@ import projectMaterialModel from './projectMaterial.model.js';
 import projectVariationModel from './projectVariation.model.js';
 import projectAmendModel from './projectAmend.model.js';
 import employeeTimeSheetModel from './employeeTimeSheet.model.js';
+import projectCostSheetModel from './projectCostSheet.model.js';
 
 
 dotenv.config();
@@ -80,6 +81,7 @@ const ProjectMaterial = projectMaterialModel(sequelize, Sequelize.DataTypes);
 const ProjectVariation = projectVariationModel(sequelize, Sequelize.DataTypes);
 const ProjectAmend = projectAmendModel(sequelize, Sequelize.DataTypes);
 const EmployeeTimeSheet = employeeTimeSheetModel(sequelize, Sequelize.DataTypes);
+const ProjectCostSheet = projectCostSheetModel(sequelize, Sequelize.DataTypes);
 
 
 
@@ -115,6 +117,7 @@ const db = {
   ProjectVariation,
   ProjectAmend,
   EmployeeTimeSheet,
+  ProjectCostSheet,
   sequelize,
   Sequelize,
 };

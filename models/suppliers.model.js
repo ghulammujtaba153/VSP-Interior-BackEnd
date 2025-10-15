@@ -13,7 +13,7 @@ export default (sequelize, DataTypes) => {
             set(value) {
                 if (typeof value === 'string' && value.length > 0) {
                     const formatted =
-                      value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+                      value.charAt(0).toUpperCase() + value.slice(1);
                     this.setDataValue('name', formatted);
                 } else {
                     this.setDataValue('name', value);

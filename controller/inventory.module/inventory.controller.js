@@ -171,6 +171,14 @@ export const getInventory = async (req, res) => {
           model: db.Suppliers,
           as: "supplier",
         },
+        {
+          model: db.PriceBookCategory,
+          as: "categoryDetails",
+        },
+        {
+          model: db.PriceBook,
+          as: "priceBooks",
+        },
       ],
       where: whereConditions,
       offset,

@@ -52,6 +52,11 @@ export default (sequelize, DataTypes) => {
             foreignKey: 'priceBookCategoryId',
             onDelete: 'CASCADE',
         });
+
+        PriceBookCategory.hasMany(models.Inventory, {
+            foreignKey: 'category',
+            onDelete: 'SET NULL',
+        });
         
     };
 

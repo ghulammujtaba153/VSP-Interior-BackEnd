@@ -136,22 +136,35 @@ export const importCSV = async (req, res) => {
 
 
 export const getInventory = async (req, res) => {
-  const { page = 1, limit = 10, search = "", supplierId = null } = req.query;
+  const { page = 1, limit = 10, search = "", supplierId, categoryId, priceBookId, status } = req.query;
   const offset = (page - 1) * limit;
   const whereConditions = {};
 
-
+  // Filter by supplier
   if (supplierId && supplierId.trim() !== "") {
     whereConditions.supplierId = supplierId;
   }
 
+  // Filter by category
+  if (categoryId && categoryId.trim() !== "") {
+    whereConditions.category = categoryId;
+  }
+
+  // Filter by priceBook
+  if (priceBookId && priceBookId.trim() !== "") {
+    whereConditions.priceBookId = priceBookId;
+  }
+
+  // Filter by status
+  if (status && status.trim() !== "") {
+    whereConditions.status = status;
+  }
+
+  // Search logic
   if (search && search.trim() !== "") {
     whereConditions[Op.or] = [
-      { itemCode: { [Op.iLike]: `%${search}%` } },
       { name: { [Op.iLike]: `%${search}%` } },
       { description: { [Op.iLike]: `%${search}%` } },
-
-      // ✅ Cast numeric fields to TEXT so iLike works
       Sequelize.where(
         Sequelize.cast(Sequelize.col("costPrice"), "TEXT"),
         { [Op.iLike]: `%${search}%` }
@@ -160,35 +173,26 @@ export const getInventory = async (req, res) => {
         Sequelize.cast(Sequelize.col("quantity"), "TEXT"),
         { [Op.iLike]: `%${search}%` }
       ),
-
     ];
   }
 
   try {
-    const { rows, count } = await Inventory.findAndCountAll({
+    const { rows, count } = await db.Inventory.findAndCountAll({
       include: [
-        {
-          model: db.Suppliers,
-          as: "supplier",
-        },
-        {
-          model: db.PriceBookCategory,
-          as: "categoryDetails",
-        },
-        {
-          model: db.PriceBook,
-          as: "priceBooks",
-        },
+        { model: db.Suppliers, as: "supplier" },
+        { model: db.PriceBookCategory, as: "categoryDetails" },
+        { model: db.PriceBook, as: "priceBooks" },
       ],
       where: whereConditions,
       offset,
       limit: parseInt(limit, 10),
+      order: [["createdAt", "DESC"]],
     });
 
     res.status(200).json({
       message: "Inventory fetched successfully",
       inventory: rows,
-      total: count, // ✅ send total for pagination
+      total: count,
     });
   } catch (error) {
     res.status(500).json({

@@ -7,11 +7,26 @@ This folder contains SQL migration scripts that can be run manually on your data
 ### 1. Add Unique Constraint for PriceBook Categories
 **File:** `add_unique_constraint_pricebook_category.sql`
 
-**Purpose:** Ensures that no duplicate categories with the same name and version can exist for a supplier.
+**Purpose:** Ensures that no duplicate categories with the same name can exist for a supplier. Note: Version management is now at the PriceBook item level, not category level.
+
+### 2. Add Unique Constraint for PriceBook Items (Version Separation)
+**File:** `add_unique_constraint_pricebook.sql`
+
+**Purpose:** Ensures each version of a price book item is handled separately. Same item name can exist in different versions (v1, v2, v3, etc.), but the combination of name + category + version must be unique.
 
 **When to run:** 
 - If you're upgrading from a version without this constraint
 - If Sequelize doesn't auto-create the constraint on sync
+- **IMPORTANT**: Run this migration to ensure version separation works correctly
+
+**Example:** This allows:
+- "Oak Wood" v1, $25.00
+- "Oak Wood" v2, $28.00  ✅ Different versions (allowed)
+- "Oak Wood" v3, $30.00  ✅ Different versions (allowed)
+
+But prevents:
+- "Oak Wood" v1, $25.00 (existing)
+- "Oak Wood" v1, $30.00 ❌ Duplicate (same name + version)
 
 **How to run:**
 ```bash
@@ -35,9 +50,17 @@ psql -U your_username -d your_database_name
 
 ## Rollback
 
-To remove the constraint if needed:
+To remove the constraints if needed:
+
+**For PriceBookCategory:**
 ```sql
 ALTER TABLE "PriceBookCategory" 
-DROP CONSTRAINT IF EXISTS unique_category_name_supplier_version;
+DROP CONSTRAINT IF EXISTS unique_category_name_supplier;
+```
+
+**For PriceBook (Version Separation):**
+```sql
+ALTER TABLE "priceBooks" 
+DROP CONSTRAINT IF EXISTS unique_pricebook_name_category_version;
 ```
 

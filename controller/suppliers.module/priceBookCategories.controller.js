@@ -5,20 +5,19 @@ import { Op } from 'sequelize';
 
 export const createPriceBookCategory = async (req, res) => {
     try {
-        const { name, supplierId, version } = req.body;
+        const { name, supplierId } = req.body;
         
-        // Check if category with same name and version already exists for this supplier
+        // Check if category with same name already exists for this supplier
         const existingCategory = await PriceBookCategory.findOne({
             where: {
                 name: name,
-                supplierId: supplierId,
-                version: version || 'v1'
+                supplierId: supplierId
             }
         });
 
         if (existingCategory) {
             return res.status(400).json({ 
-                error: `Category "${name}" already exists in version ${version || 'v1'}` 
+                error: `Category "${name}" already exists` 
             });
         }
 
@@ -35,8 +34,7 @@ export const getPriceBookCategories = async (req, res) => {
     
     if (search) {
         whereClause[Op.or] = [
-          { name: { [Op.like]: `%${search}%` } },
-          { version: { [Op.like]: `%${search}%` } }
+          { name: { [Op.like]: `%${search}%` } }
         ];
     }
 
@@ -56,22 +54,21 @@ export const getPriceBookCategories = async (req, res) => {
 export const updatePriceBookCategory = async (req, res) => {
     try {
         const categoryId = req.params.id;
-        const { name, supplierId, version, ...otherData } = req.body;
+        const { name, supplierId } = req.body;
 
-        // Check if another category with same name and version already exists for this supplier
-        if (name && supplierId && version) {
+        // Check if another category with same name already exists for this supplier
+        if (name && supplierId) {
             const existingCategory = await PriceBookCategory.findOne({
                 where: {
                     name: name,
-                    supplierId: supplierId,
-                    version: version
+                    supplierId: supplierId
                 }
             });
 
             // If exists and it's not the current category being updated
             if (existingCategory && existingCategory.id !== parseInt(categoryId)) {
                 return res.status(400).json({ 
-                    error: `Category "${name}" already exists in version ${version}` 
+                    error: `Category "${name}" already exists` 
                 });
             }
         }
@@ -79,16 +76,8 @@ export const updatePriceBookCategory = async (req, res) => {
         // Update the category
         await PriceBookCategory.update(req.body, { where: { id: categoryId } });
 
-        // If version is being updated, also update all associated PriceBook items
-        if (version) {
-            await PriceBook.update(
-                { version: version },
-                { where: { priceBookCategoryId: categoryId } }
-            );
-        }
-
         res.status(200).json({ 
-            message: 'Category and associated items updated successfully',
+            message: 'Category updated successfully',
             updated: true 
         });
     } catch (error) {
@@ -109,18 +98,29 @@ export const getAvailableVersions = async (req, res) => {
     try {
         const { supplierId } = req.params;
         
-        // Get distinct versions from both PriceBookCategory and PriceBook
-        const categoryVersions = await PriceBookCategory.findAll({
+        // Get distinct versions from PriceBook items for categories of this supplier
+        const categories = await PriceBookCategory.findAll({
             where: { supplierId },
+            attributes: ['id']
+        });
+        
+        const categoryIds = categories.map(c => c.id);
+        
+        if (categoryIds.length === 0) {
+            return res.status(200).json({ versions: ['v1'] });
+        }
+        
+        const priceBookVersions = await PriceBook.findAll({
+            where: { priceBookCategoryId: categoryIds },
             attributes: ['version'],
             group: ['version'],
             raw: true
         });
 
         // Extract unique versions and sort them
-        const versions = [...new Set(categoryVersions.map(item => item.version))].sort();
+        const versions = [...new Set(priceBookVersions.map(item => item.version).filter(Boolean))].sort();
         
-        res.status(200).json({ versions });
+        res.status(200).json({ versions: versions.length > 0 ? versions : ['v1'] });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

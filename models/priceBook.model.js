@@ -70,6 +70,13 @@ export default (sequelize, DataTypes) => {
     }, {
         tableName: 'priceBooks',
         timestamps: true,
+        indexes: [
+            {
+                unique: true,
+                fields: ['name', 'priceBookCategoryId', 'version'],
+                name: 'unique_pricebook_name_category_version'
+            }
+        ]
     })
 
     PriceBook.associate = (models) => {

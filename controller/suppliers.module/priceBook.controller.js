@@ -4,19 +4,36 @@ const { PriceBook, PriceBookCategory, Suppliers } = db;
 
 export const createPriceBook = async (req, res) => {
     try {
-        const { priceBookCategoryId, ...otherData } = req.body;
+        const { priceBookCategoryId, name, version } = req.body;
         
-        // Fetch the category to get its version
+        // Verify the category exists
         const category = await PriceBookCategory.findByPk(priceBookCategoryId);
         
         if (!category) {
             return res.status(404).json({ error: 'Category not found' });
         }
+
+        const targetVersion = version || 'v1';
         
-        // Create price book item with the same version as the category
+        // Check for duplicate: same name + category + version
+        const existingItem = await PriceBook.findOne({
+            where: {
+                name: name,
+                priceBookCategoryId: priceBookCategoryId,
+                version: targetVersion
+            }
+        });
+
+        if (existingItem) {
+            return res.status(400).json({ 
+                error: `Item "${name}" already exists in version ${targetVersion}` 
+            });
+        }
+        
+        // Create price book item with provided version or default to v1
         const priceBook = await PriceBook.create({
             ...req.body,
-            version: req.body.version || category.version // Use provided version or category's version
+            version: targetVersion
         });
         
         res.status(201).json(priceBook);
@@ -35,20 +52,20 @@ export const importPriceBook = async (req, res) => {
 
         const targetVersion = version || 'v1';
 
-        // 1) Ensure categories exist (per supplier and version)
+        // 1) Ensure categories exist for this supplier
         const categoryNames = Array.from(new Set(items.map(i => i.category).filter(Boolean)));
 
-        // Fetch existing categories for this supplier and version
+        // Fetch existing categories for this supplier
         const existingCategories = await PriceBookCategory.findAll({
-            where: { supplierId, version: targetVersion },
-            attributes: ['id', 'name', 'version']
+            where: { supplierId },
+            attributes: ['id', 'name']
         });
         const nameToId = new Map(existingCategories.map(c => [c.name, c.id]));
 
         // Determine which categories need to be created
         const toCreate = categoryNames
             .filter(name => !nameToId.has(name))
-            .map(name => ({ name, supplierId, version: targetVersion }));
+            .map(name => ({ name, supplierId }));
         const createdCategories = toCreate.length > 0
             ? await PriceBookCategory.bulkCreate(toCreate, { returning: true })
             : [];
@@ -65,13 +82,13 @@ export const importPriceBook = async (req, res) => {
             }
         }
 
-        // 3) Fetch existing price book item names for these categories
+        // 3) Fetch existing price book item names for these categories and version
         const categoryIds = Array.from(new Set(uniqueItems.map(i => nameToId.get(i.category)).filter(Boolean)));
         const existingItems = await PriceBook.findAll({
             where: { priceBookCategoryId: categoryIds, version: targetVersion },
             attributes: ['name', 'priceBookCategoryId', 'version']
         });
-        const existsKey = new Set(existingItems.map(i => `${i.priceBookCategoryId}::${i.name}`));
+        const existsKey = new Set(existingItems.map(i => `${i.priceBookCategoryId}::${i.name}::${i.version}`));
 
         // 4) Prepare new rows (skip duplicates)
         const rowsToInsert = uniqueItems
@@ -84,7 +101,7 @@ export const importPriceBook = async (req, res) => {
                 status: i.status === 'inactive' ? 'inactive' : 'active',
                 version: targetVersion
             }))
-            .filter(r => r.priceBookCategoryId && !existsKey.has(`${r.priceBookCategoryId}::${r.name}`));
+            .filter(r => r.priceBookCategoryId && !existsKey.has(`${r.priceBookCategoryId}::${r.name}::${r.version}`));
 
         const created = rowsToInsert.length > 0
             ? await PriceBook.bulkCreate(rowsToInsert, { returning: true })
@@ -130,21 +147,43 @@ export const getPriceBook = async (req, res) => {
 
 export const updatePriceBook = async (req, res) => {
     try {
-        const { priceBookCategoryId, ...updateData } = req.body;
-        
-        // If category is being changed, ensure version matches the new category
-        if (priceBookCategoryId) {
-            const category = await PriceBookCategory.findByPk(priceBookCategoryId);
-            if (category) {
-                updateData.version = category.version;
+        const itemId = req.params.id;
+        const { name, priceBookCategoryId, version } = req.body;
+
+        // If name, category, or version is being updated, check for duplicates
+        if (name || priceBookCategoryId || version) {
+            // Get current item
+            const currentItem = await PriceBook.findByPk(itemId);
+            
+            if (!currentItem) {
+                return res.status(404).json({ error: 'Item not found' });
+            }
+
+            // Build where clause for duplicate check
+            const checkName = name || currentItem.name;
+            const checkCategory = priceBookCategoryId || currentItem.priceBookCategoryId;
+            const checkVersion = version || currentItem.version;
+
+            // Check if another item exists with same name + category + version
+            const existingItem = await PriceBook.findOne({
+                where: {
+                    name: checkName,
+                    priceBookCategoryId: checkCategory,
+                    version: checkVersion
+                }
+            });
+
+            // If exists and it's not the current item being updated
+            if (existingItem && existingItem.id !== parseInt(itemId)) {
+                return res.status(400).json({ 
+                    error: `Item "${checkName}" already exists in version ${checkVersion}` 
+                });
             }
         }
-        
-        const priceBook = await PriceBook.update(
-            { ...updateData, priceBookCategoryId },
-            { where: { id: req.params.id } }
-        );
-        
+
+        const priceBook = await PriceBook.update(req.body, {
+            where: { id: itemId }
+        });
         res.status(200).json(priceBook);
     } catch (error) {
         res.status(500).json({ error: error.message });

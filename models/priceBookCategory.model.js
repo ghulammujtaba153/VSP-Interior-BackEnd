@@ -27,11 +27,6 @@ export default (sequelize, DataTypes) => {
                 }
             },
         },
-        version: {
-            type: DataTypes.STRING,
-            allowNull: true,
-            defaultValue: 'v1',
-        },
         createdAt: {
             type: DataTypes.DATE,
             allowNull: false,
@@ -48,8 +43,8 @@ export default (sequelize, DataTypes) => {
         indexes: [
             {
                 unique: true,
-                fields: ['name', 'supplierId', 'version'],
-                name: 'unique_category_name_supplier_version'
+                fields: ['name', 'supplierId'],
+                name: 'unique_category_name_supplier'
             }
         ]
     })

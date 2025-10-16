@@ -4,7 +4,21 @@ const { PriceBook, PriceBookCategory, Suppliers } = db;
 
 export const createPriceBook = async (req, res) => {
     try {
-        const priceBook = await PriceBook.create(req.body);
+        const { priceBookCategoryId, ...otherData } = req.body;
+        
+        // Fetch the category to get its version
+        const category = await PriceBookCategory.findByPk(priceBookCategoryId);
+        
+        if (!category) {
+            return res.status(404).json({ error: 'Category not found' });
+        }
+        
+        // Create price book item with the same version as the category
+        const priceBook = await PriceBook.create({
+            ...req.body,
+            version: req.body.version || category.version // Use provided version or category's version
+        });
+        
         res.status(201).json(priceBook);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -14,23 +28,27 @@ export const createPriceBook = async (req, res) => {
 
 export const importPriceBook = async (req, res) => {
     try {
-        const { userId, supplierId, items } = req.body;
+        const { userId, supplierId, items, version } = req.body;
         if (!Array.isArray(items) || items.length === 0 || !supplierId) {
             return res.status(400).json({ message: 'Invalid data format' });
         }
 
-        // 1) Ensure categories exist (per supplier)
+        const targetVersion = version || 'v1';
+
+        // 1) Ensure categories exist (per supplier and version)
         const categoryNames = Array.from(new Set(items.map(i => i.category).filter(Boolean)));
 
-        // Fetch existing categories for this supplier
+        // Fetch existing categories for this supplier and version
         const existingCategories = await PriceBookCategory.findAll({
-            where: { supplierId },
-            attributes: ['id', 'name']
+            where: { supplierId, version: targetVersion },
+            attributes: ['id', 'name', 'version']
         });
         const nameToId = new Map(existingCategories.map(c => [c.name, c.id]));
 
         // Determine which categories need to be created
-        const toCreate = categoryNames.filter(name => !nameToId.has(name)).map(name => ({ name, supplierId }));
+        const toCreate = categoryNames
+            .filter(name => !nameToId.has(name))
+            .map(name => ({ name, supplierId, version: targetVersion }));
         const createdCategories = toCreate.length > 0
             ? await PriceBookCategory.bulkCreate(toCreate, { returning: true })
             : [];
@@ -50,8 +68,8 @@ export const importPriceBook = async (req, res) => {
         // 3) Fetch existing price book item names for these categories
         const categoryIds = Array.from(new Set(uniqueItems.map(i => nameToId.get(i.category)).filter(Boolean)));
         const existingItems = await PriceBook.findAll({
-            where: { priceBookCategoryId: categoryIds },
-            attributes: ['name', 'priceBookCategoryId']
+            where: { priceBookCategoryId: categoryIds, version: targetVersion },
+            attributes: ['name', 'priceBookCategoryId', 'version']
         });
         const existsKey = new Set(existingItems.map(i => `${i.priceBookCategoryId}::${i.name}`));
 
@@ -63,7 +81,8 @@ export const importPriceBook = async (req, res) => {
                 description: i.description || null,
                 unit: i.unit,
                 price: i.price,
-                status: i.status === 'inactive' ? 'inactive' : 'active'
+                status: i.status === 'inactive' ? 'inactive' : 'active',
+                version: targetVersion
             }))
             .filter(r => r.priceBookCategoryId && !existsKey.has(`${r.priceBookCategoryId}::${r.name}`));
 
@@ -72,10 +91,11 @@ export const importPriceBook = async (req, res) => {
             : [];
 
         return res.status(201).json({
-            message: `PriceBook processed: inserted ${created.length}, skipped ${uniqueItems.length - created.length} duplicate(s).`,
+            message: `PriceBook processed: inserted ${created.length} items in ${targetVersion}, skipped ${uniqueItems.length - created.length} duplicate(s).`,
             insertedCount: created.length,
             duplicateCount: uniqueItems.length - created.length,
             categoriesCreated: createdCategories.length,
+            version: targetVersion,
             items: created
         });
     } catch (error) {
@@ -110,9 +130,21 @@ export const getPriceBook = async (req, res) => {
 
 export const updatePriceBook = async (req, res) => {
     try {
-        const priceBook = await PriceBook.update(req.body, {
-            where: { id: req.params.id }
-        });
+        const { priceBookCategoryId, ...updateData } = req.body;
+        
+        // If category is being changed, ensure version matches the new category
+        if (priceBookCategoryId) {
+            const category = await PriceBookCategory.findByPk(priceBookCategoryId);
+            if (category) {
+                updateData.version = category.version;
+            }
+        }
+        
+        const priceBook = await PriceBook.update(
+            { ...updateData, priceBookCategoryId },
+            { where: { id: req.params.id } }
+        );
+        
         res.status(200).json(priceBook);
     } catch (error) {
         res.status(500).json({ error: error.message });

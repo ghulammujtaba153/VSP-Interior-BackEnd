@@ -47,9 +47,15 @@ export default (sequelize, DataTypes) => {
             type: DataTypes.DECIMAL(10, 2),
             allowNull: false,
         },
+        version: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: 'v1',
+        },
         status: {
             type: DataTypes.STRING,
             allowNull: false,
+            defaultValue: 'active',
         },
         createdAt: {
             type: DataTypes.DATE,

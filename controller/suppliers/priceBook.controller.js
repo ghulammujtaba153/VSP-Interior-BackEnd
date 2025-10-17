@@ -150,7 +150,6 @@ export const updatePriceBook = async (req, res) => {
         const itemId = req.params.id;
         const { name, priceBookCategoryId, version } = req.body;
 
-        // If name, category, or version is being updated, check for duplicates
         if (name || priceBookCategoryId || version) {
             // Get current item
             const currentItem = await PriceBook.findByPk(itemId);
@@ -189,6 +188,31 @@ export const updatePriceBook = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 }
+
+
+export const getPriceBookHistory = async (req, res) => {
+  const { name, priceBookCategoryId } = req.query;
+  console.log('Fetching history for:', name, priceBookCategoryId);
+
+  try {
+    const whereClause = {};
+
+    if (name) whereClause.name = name;
+    if (priceBookCategoryId) whereClause.priceBookCategoryId = priceBookCategoryId;
+
+    const priceBooks = await PriceBook.findAll({
+      where: whereClause,
+      order: [['version', 'DESC']],
+    });
+
+    res.status(200).json(priceBooks);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+
 
 
 export const deletePriceBook = async (req, res) => {

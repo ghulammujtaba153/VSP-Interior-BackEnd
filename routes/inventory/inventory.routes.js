@@ -1,5 +1,5 @@
 import express from "express";
-import { createInventory, getInventory, updateInventory, deleteInventory, importCSV } from "../../controller/inventory.module/inventory.controller.js";
+import { createInventory, getInventory, updateInventory, deleteInventory, importCSV } from "../../controller/inventory/inventory.controller.js";
 
 const inventoryRouter = express.Router();
 

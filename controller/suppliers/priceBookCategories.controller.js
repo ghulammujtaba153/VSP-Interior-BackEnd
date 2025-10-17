@@ -98,7 +98,6 @@ export const getAvailableVersions = async (req, res) => {
     try {
         const { supplierId } = req.params;
         
-        // Get distinct versions from PriceBook items for categories of this supplier
         const categories = await PriceBookCategory.findAll({
             where: { supplierId },
             attributes: ['id']

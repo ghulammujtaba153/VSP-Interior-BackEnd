@@ -1,5 +1,5 @@
 import express from 'express';
-import { createRole, getRoles, updateRole, deleteRole } from '../../controller/user.module/role.controller.js';
+import { createRole, getRoles, updateRole, deleteRole } from '../../controller/user/role.controller.js';
 
 const roleRouter = express.Router();
 

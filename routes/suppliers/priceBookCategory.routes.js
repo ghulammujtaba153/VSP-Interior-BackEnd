@@ -1,5 +1,5 @@
 import express from 'express';
-import { createPriceBookCategory, deletePriceBookCategory, getPriceBookCategories, updatePriceBookCategory, getAvailableVersions } from '../../controller/suppliers.module/priceBookCategories.controller.js';
+import { createPriceBookCategory, deletePriceBookCategory, getPriceBookCategories, updatePriceBookCategory, getAvailableVersions } from '../../controller/suppliers/priceBookCategories.controller.js';
 
 const priceBookCategoryRouter = express.Router();
 

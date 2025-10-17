@@ -1,5 +1,5 @@
 import express from 'express';
-import { createEmployeeTimeSheet, deleteEmployeeTimeSheet, employeeTimeSheetByEmployeeId, getEmployeeTimeSheet, getEmployeeTimeSheetById, updateEmployeeTimeSheet } from '../../controller/human-resource/employeeTimeSheet.controller.js';
+import { createEmployeeTimeSheet, deleteEmployeeTimeSheet, employeeTimeSheetByEmployeeId, getEmployeeTimeSheet, getEmployeeTimeSheetById, updateEmployeeTimeSheet } from '../../controller/humanResource/employeeTimeSheet.controller.js';
 // import { getEmployeeTimeSheetById } from './../../controller/human-resource/employeeTimeSheet.controller';
 
 const employeeTimeSheetRouter = express.Router();

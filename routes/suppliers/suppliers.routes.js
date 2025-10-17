@@ -1,5 +1,5 @@
 import express from "express";
-import { createSupplier, getSuppliers, getSupplierById, updateSupplier, deleteSupplier, importCSV } from "../../controller/suppliers.module/suppliers.controller.js";
+import { createSupplier, getSuppliers, getSupplierById, updateSupplier, deleteSupplier, importCSV } from "../../controller/suppliers/suppliers.controller.js";
 
 const suppliersRouter = express.Router();
 

@@ -1,5 +1,5 @@
 import express from 'express';
-import { createPermission, deletePermission, getPermission, getPermissions, updatePermission, getPermissionsByRole, createOrUpdatePermission } from '../../controller/user.module/permissions.controller.js';
+import { createPermission, deletePermission, getPermission, getPermissions, updatePermission, getPermissionsByRole, createOrUpdatePermission } from '../../controller/user/permissions.controller.js';
 
 
 

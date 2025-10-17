@@ -52,6 +52,11 @@ export default (sequelize, DataTypes) => {
             allowNull: true,
             defaultValue: 'v1',
         },
+        versionEndDate: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            defaultValue: null,
+        },
         status: {
             type: DataTypes.STRING,
             allowNull: false,

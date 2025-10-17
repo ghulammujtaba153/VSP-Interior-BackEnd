@@ -1,46 +1,63 @@
 import db from '../../models/index.js';
+import { Op } from "sequelize";
+
 const { PriceBook, PriceBookCategory, Suppliers } = db;
 
 
+
 export const createPriceBook = async (req, res) => {
-    try {
-        const { priceBookCategoryId, name, version } = req.body;
-        
-        // Verify the category exists
-        const category = await PriceBookCategory.findByPk(priceBookCategoryId);
-        
-        if (!category) {
-            return res.status(404).json({ error: 'Category not found' });
-        }
+  try {
+    const { priceBookCategoryId, name, version } = req.body;
 
-        const targetVersion = version || 'v1';
-        
-        // Check for duplicate: same name + category + version
-        const existingItem = await PriceBook.findOne({
-            where: {
-                name: name,
-                priceBookCategoryId: priceBookCategoryId,
-                version: targetVersion
-            }
-        });
-
-        if (existingItem) {
-            return res.status(400).json({ 
-                error: `Item "${name}" already exists in version ${targetVersion}` 
-            });
-        }
-        
-        // Create price book item with provided version or default to v1
-        const priceBook = await PriceBook.create({
-            ...req.body,
-            version: targetVersion
-        });
-        
-        res.status(201).json(priceBook);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+    // Verify category exists
+    const category = await PriceBookCategory.findByPk(priceBookCategoryId);
+    if (!category) {
+      return res.status(404).json({ error: "Category not found" });
     }
-}
+
+    const targetVersion = version || "v1";
+
+    // Check for duplicate
+    const existingItem = await PriceBook.findOne({
+      where: {
+        name,
+        priceBookCategoryId,
+        version: targetVersion,
+      },
+    });
+
+    if (existingItem) {
+      return res.status(400).json({
+        error: `Item "${name}" already exists in version ${targetVersion}`,
+      });
+    }
+
+    // ✅ Close previous versions
+    if (version) {
+      const now = new Date();
+      await PriceBook.update(
+        { versionEndDate: now },
+        {
+          where: {
+            priceBookCategoryId,
+            name,
+            version: { [Op.ne]: version }, // mark all previous versions as ended
+          },
+        }
+      );
+    }
+
+    // Create new version
+    const priceBook = await PriceBook.create({
+      ...req.body,
+      version: targetVersion,
+    });
+
+    res.status(201).json(priceBook);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 
 export const importPriceBook = async (req, res) => {
@@ -163,6 +180,7 @@ export const updatePriceBook = async (req, res) => {
             const checkCategory = priceBookCategoryId || currentItem.priceBookCategoryId;
             const checkVersion = version || currentItem.version;
 
+
             // Check if another item exists with same name + category + version
             const existingItem = await PriceBook.findOne({
                 where: {
@@ -172,6 +190,8 @@ export const updatePriceBook = async (req, res) => {
                 }
             });
 
+
+
             // If exists and it's not the current item being updated
             if (existingItem && existingItem.id !== parseInt(itemId)) {
                 return res.status(400).json({ 
@@ -179,6 +199,8 @@ export const updatePriceBook = async (req, res) => {
                 });
             }
         }
+
+        
 
         const priceBook = await PriceBook.update(req.body, {
             where: { id: itemId }

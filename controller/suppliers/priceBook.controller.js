@@ -36,11 +36,12 @@ export const createPriceBook = async (req, res) => {
     if (version) {
       const now = new Date();
       await PriceBook.update(
-        { versionEndDate: now },
+        { versionEndDate: now, status: "inactive" },
         {
           where: {
             priceBookCategoryId,
             name,
+
             version: { [Op.ne]: version }, // mark all previous versions as ended
           },
         }

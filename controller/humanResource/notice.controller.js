@@ -66,8 +66,15 @@ export const createNotice = async (req, res) => {
 
 // Get all notices
 export const getNotices = async (req, res) => {
+  const { status } = req.query;
+  const whereClause = {};
+  if (status) {
+    whereClause.status = status;
+  }
+
   try {
     const notices = await Notice.findAll({
+      where: whereClause,
       order: [["createdAt", "DESC"]],
     });
     res.status(200).json(notices);

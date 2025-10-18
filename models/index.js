@@ -34,7 +34,8 @@ import projectAmendModel from './projectAmend.model.js';
 import employeeTimeSheetModel from './employeeTimeSheet.model.js';
 import projectCostSheetModel from './projectCostSheet.model.js';
 import noticeModel from './notice.model.js';
-
+import employeeDocumentRequestModel from './employeeDocumentRequest.model.js';
+import employeeDocumentsModel from './employeeDocuments.model.js';
 
 dotenv.config();
 
@@ -84,7 +85,8 @@ const ProjectAmend = projectAmendModel(sequelize, Sequelize.DataTypes);
 const EmployeeTimeSheet = employeeTimeSheetModel(sequelize, Sequelize.DataTypes);
 const ProjectCostSheet = projectCostSheetModel(sequelize, Sequelize.DataTypes);
 const Notice = noticeModel(sequelize, Sequelize.DataTypes);
-
+const EmployeeDocumentRequest = employeeDocumentRequestModel(sequelize, Sequelize.DataTypes);
+const EmployeeDocuments = employeeDocumentsModel(sequelize, Sequelize.DataTypes);
 
 // Prepare DB object
 const db = {
@@ -120,6 +122,8 @@ const db = {
   EmployeeTimeSheet,
   ProjectCostSheet,
   Notice,
+  EmployeeDocumentRequest,
+  EmployeeDocuments,
   sequelize,
   Sequelize,
 };

@@ -24,6 +24,7 @@ import projectSetupRouter from "./project/projectSetup.routes.js";
 import projectVariationRouter from "./project/projectVariation.routes.js";
 import employeeTimeSheetRouter from "./humanResource/employeeTimeSheet.routes.js";
 import noticeRouter from "./humanResource/notice.routes.js";
+import employeeDocumentRouter from "./humanResource/employeeDocument.routes.js";
 
 const router = express.Router();
 
@@ -52,5 +53,6 @@ router.use('/project-setup', projectSetupRouter);
 router.use('/project-variation', projectVariationRouter);
 router.use("/employee-timesheet", employeeTimeSheetRouter);
 router.use("/notices", noticeRouter);
+router.use("/employee-document", employeeDocumentRouter);
 
 export default router;

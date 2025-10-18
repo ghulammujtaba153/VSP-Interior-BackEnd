@@ -46,6 +46,8 @@ export default (sequelize, DataTypes) => {
       User.hasMany(models.Audit, { foreignKey: 'userId' });
       User.hasMany(models.EmployeeLeave, { foreignKey: 'employeeId' });
       User.hasMany(models.EmployeeTimeSheet, { foreignKey: 'employeeId' });
+      User.hasMany(models.EmployeeDocumentRequest, { foreignKey: 'employeeId' });
+      User.hasMany(models.EmployeeDocuments, { foreignKey: 'employeeId' });
     };
   
     return User;

@@ -31,7 +31,7 @@ jobs:
             IMAGE_NAME="trade-sense-app"
             PORT="5000"
             PROJECT_DIR="Trade-Sense-App-backend-main"
-            ENV_FILE=".envs"
+            ENV_FILE=".env"
           elif [[ "$BRANCH_NAME" == "dev" ]]; then
             CONTAINER_NAME="trade-sense-backend-dev"
             IMAGE_NAME="trade-sense-app-dev"

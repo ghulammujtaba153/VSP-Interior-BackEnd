@@ -28,21 +28,22 @@ jobs:
           ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << EOF
             set -e
 
+            # Use the SAME directory for both branches
+            PROJECT_DIR="VPS-Interior-BackEnd"
+            
             # Branch-specific variables
             if [ "$BRANCH_NAME" = "main" ]; then
               CONTAINER_NAME="vps-backend-prod"
               IMAGE_NAME="vps-backend-prod"
               PORT="5000"
-              PROJECT_DIR="VPS-Interior-BackEnd"
-              REPO_BRANCH="main"
               ENV_FILE=".env"
+              REPO_BRANCH="main"
             elif [ "$BRANCH_NAME" = "dev" ]; then
               CONTAINER_NAME="vps-backend-dev"
               IMAGE_NAME="vps-backend-dev"
               PORT="5001"
-              PROJECT_DIR="VPS-Interior-BackEnd-Dev"
-              REPO_BRANCH="dev"
               ENV_FILE=".env.dev"
+              REPO_BRANCH="dev"
             else
               echo "Branch '$BRANCH_NAME' not configured for deployment"
               exit 1
@@ -52,20 +53,21 @@ jobs:
             echo "Using port: \$PORT"
             echo "Project directory: \$PROJECT_DIR"
             echo "Environment file: \$ENV_FILE"
+            echo "Git branch: \$REPO_BRANCH"
 
             # Clone repo if it doesn't exist
             if [ ! -d "\$PROJECT_DIR" ]; then
-              git clone -b \$REPO_BRANCH https://github.com/ghulammujtaba153/VPS-Interior-BackEnd.git \$PROJECT_DIR
+              git clone https://github.com/ghulammujtaba153/VPS-Interior-BackEnd.git \$PROJECT_DIR
             fi
 
             cd \$PROJECT_DIR
 
-            # Pull latest code
-            git fetch origin \$REPO_BRANCH
+            # Pull latest code for the specific branch
+            git fetch origin
             git checkout \$REPO_BRANCH
             git reset --hard origin/\$REPO_BRANCH
 
-            # Check if environment file exists in project directory
+            # Check if environment file exists
             echo "Checking for environment file in: \$(pwd)"
             if [ ! -f "\$ENV_FILE" ]; then
               echo "Error: Environment file \$ENV_FILE not found in project directory!"
@@ -74,8 +76,6 @@ jobs:
               exit 1
             else
               echo "Found environment file: \$ENV_FILE"
-              echo "First few lines of \$ENV_FILE:"
-              head -5 "\$ENV_FILE"
             fi
 
             # Stop and remove any container using the same port
@@ -91,7 +91,6 @@ jobs:
             docker build -t \$IMAGE_NAME .
 
             # Run Docker container with branch-specific .env
-            # Use full path to env file to be safe
             docker run -d \\
               --name \$CONTAINER_NAME \\
               --env-file "\$(pwd)/\$ENV_FILE" \\

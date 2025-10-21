@@ -9,9 +9,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      # Use github.ref and extract branch name in SSH
-      GITHUB_REF: ${{ github.ref }}
 
     steps:
       - name: Checkout Code
@@ -24,12 +21,12 @@ jobs:
 
       - name: Deploy to EC2 via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
+          # Extract branch name before SSH
+          BRANCH_NAME="${{ github.ref_name }}"
+          echo "Deploying branch: $BRANCH_NAME"
+          
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << EOF
             set -e
-
-            # Extract branch name from github.ref (refs/heads/main -> main)
-            BRANCH_NAME=$(basename $GITHUB_REF)
-            echo "Deploying branch: $BRANCH_NAME"
 
             # Branch-specific variables
             if [ "$BRANCH_NAME" = "main" ]; then
@@ -51,33 +48,44 @@ jobs:
               exit 1
             fi
 
+            echo "Using container: \$CONTAINER_NAME"
+            echo "Using port: \$PORT"
+            echo "Project directory: \$PROJECT_DIR"
+
             # Clone repo if it doesn't exist
-            if [ ! -d "$PROJECT_DIR" ]; then
-              git clone -b $REPO_BRANCH https://github.com/ghulammujtaba153/VPS-Interior-BackEnd.git $PROJECT_DIR
+            if [ ! -d "\$PROJECT_DIR" ]; then
+              git clone -b \$REPO_BRANCH https://github.com/ghulammujtaba153/VPS-Interior-BackEnd.git \$PROJECT_DIR
             fi
 
-            cd $PROJECT_DIR
+            cd \$PROJECT_DIR
 
             # Pull latest code
-            git fetch origin $REPO_BRANCH
-            git checkout $REPO_BRANCH
-            git pull origin $REPO_BRANCH
+            git fetch origin \$REPO_BRANCH
+            git checkout \$REPO_BRANCH
+            git reset --hard origin/\$REPO_BRANCH
 
-            # Remove any container using the same port
-            docker ps --filter "publish=$PORT" -q | xargs -r docker rm -f
+            # Stop and remove any container using the same port
+            docker ps --filter "publish=\$PORT" -q | xargs -r docker rm -f
 
             # Remove old container by name if still present
-            docker rm -f $CONTAINER_NAME || true
+            docker rm -f \$CONTAINER_NAME 2>/dev/null || true
+
+            # Remove old image to avoid buildup
+            docker rmi \$IMAGE_NAME 2>/dev/null || true
 
             # Build Docker image
-            docker build -t $IMAGE_NAME .
+            docker build -t \$IMAGE_NAME .
 
             # Run Docker container with branch-specific .env
-            docker run -d \
-              --name $CONTAINER_NAME \
-              --env-file $ENV_FILE \
-              -p $PORT:$PORT \
-              $IMAGE_NAME
+            docker run -d \\
+              --name \$CONTAINER_NAME \\
+              --env-file \$ENV_FILE \\
+              -p \$PORT:\$PORT \\
+              \$IMAGE_NAME
 
-            echo "Deployment of $BRANCH_NAME branch completed successfully!"
+            # Clean up unused images
+            docker image prune -f
+
+            echo "Deployment of \$BRANCH_NAME branch completed successfully!"
+            echo "Container \$CONTAINER_NAME is running on port \$PORT"
           EOF

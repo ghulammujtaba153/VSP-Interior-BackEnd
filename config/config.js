@@ -4,6 +4,8 @@ dotenv.config();
 
 const { DATABASE_URL } = process.env;
 
+
+
 export default {
   development: {
     use_env_variable: 'DATABASE_URL',

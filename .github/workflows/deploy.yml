@@ -1,4 +1,4 @@
-name: Deploy VPS Interior Backend
+name: Deploy trading_app_backend to AWS
 
 on:
   push:
@@ -10,74 +10,69 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      # Use github.ref and extract branch name in SSH
-      GITHUB_REF: ${{ github.ref }}
+      BRANCH_NAME: ${{ github.ref_name }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up SSH Agent
+      - name: Set up SSH
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy to EC2 via SSH
+      - name: Deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
+          echo "Deploying branch: $BRANCH_NAME"
+
+          # Branch-specific variables
+          if [[ "$BRANCH_NAME" == "main" ]]; then
+            CONTAINER_NAME="trade-sense-backend"
+            IMAGE_NAME="trade-sense-app"
+            PORT="5000"
+            PROJECT_DIR="Trade-Sense-App-backend-main"
+            ENV_FILE=".envs"
+          elif [[ "$BRANCH_NAME" == "dev" ]]; then
+            CONTAINER_NAME="trade-sense-backend-dev"
+            IMAGE_NAME="trade-sense-app-dev"
+            PORT="5001"
+            PROJECT_DIR="Trade-Sense-App-backend-dev"
+            ENV_FILE=".env.dev"
+          else
+            echo "Unsupported branch: $BRANCH_NAME"
+            exit 1
+          fi
+
+          echo "Container: $CONTAINER_NAME, Image: $IMAGE_NAME, Port: $PORT, Env: $ENV_FILE"
+
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << EOF
             set -e
+            cd ~
 
-            # Extract branch name from github.ref (refs/heads/main -> main)
-            BRANCH_NAME=$(basename $GITHUB_REF)
-            echo "Deploying branch: $BRANCH_NAME"
-
-            # Branch-specific variables
-            if [ "$BRANCH_NAME" = "main" ]; then
-              CONTAINER_NAME="vps-backend-prod"
-              IMAGE_NAME="vps-backend-prod"
-              PORT="5000"
-              PROJECT_DIR="VPS-Interior-BackEnd"
-              REPO_BRANCH="main"
-              ENV_FILE=".env"
-            elif [ "$BRANCH_NAME" = "dev" ]; then
-              CONTAINER_NAME="vps-backend-dev"
-              IMAGE_NAME="vps-backend-dev"
-              PORT="5001"
-              PROJECT_DIR="VPS-Interior-BackEnd-Dev"
-              REPO_BRANCH="dev"
-              ENV_FILE=".env.dev"
-            else
-              echo "Branch '$BRANCH_NAME' not configured for deployment"
-              exit 1
-            fi
-
-            # Clone repo if it doesn't exist
+            # Clone repo if directory doesn't exist
             if [ ! -d "$PROJECT_DIR" ]; then
-              git clone -b $REPO_BRANCH https://github.com/ghulammujtaba153/VPS-Interior-BackEnd.git $PROJECT_DIR
+              git clone -b $BRANCH_NAME https://github.com/ghulammujtaba153/Trade-Sense-App-backend-.git $PROJECT_DIR
             fi
 
             cd $PROJECT_DIR
 
             # Pull latest code
-            git fetch origin $REPO_BRANCH
-            git checkout $REPO_BRANCH
-            git pull origin $REPO_BRANCH
+            git fetch origin $BRANCH_NAME
+            git checkout $BRANCH_NAME
+            git pull origin $BRANCH_NAME
 
-            # Remove any container using the same port
-            docker ps --filter "publish=$PORT" -q | xargs -r docker rm -f
-
-            # Remove old container by name if still present
+            # Remove old container if exists
             docker rm -f $CONTAINER_NAME || true
 
             # Build Docker image
             docker build -t $IMAGE_NAME .
 
-            # Run Docker container with branch-specific .env
+            echo "Using env file: $ENV_FILE"
+
+            # Run container with branch-specific env and port
             docker run -d \
               --name $CONTAINER_NAME \
               --env-file $ENV_FILE \
-              -p $PORT:$PORT \
+              -p 0.0.0.0:$PORT:5000 \
               $IMAGE_NAME
-
-            echo "Deployment of $BRANCH_NAME branch completed successfully!"
           EOF

@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - main
-      - dev    # deploy dev branch separately
+      - dev
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      BRANCH_NAME: ${{ github.ref_name }}
+      # Use github.ref and extract branch name in SSH
+      GITHUB_REF: ${{ github.ref }}
 
     steps:
       - name: Checkout Code
@@ -26,15 +27,19 @@ jobs:
           ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
 
+            # Extract branch name from github.ref (refs/heads/main -> main)
+            BRANCH_NAME=$(basename $GITHUB_REF)
+            echo "Deploying branch: $BRANCH_NAME"
+
             # Branch-specific variables
-            if [ "${BRANCH_NAME}" = "main" ]; then
+            if [ "$BRANCH_NAME" = "main" ]; then
               CONTAINER_NAME="vps-backend-prod"
               IMAGE_NAME="vps-backend-prod"
               PORT="5000"
               PROJECT_DIR="VPS-Interior-BackEnd"
               REPO_BRANCH="main"
               ENV_FILE=".env"
-            elif [ "${BRANCH_NAME}" = "dev" ]; then
+            elif [ "$BRANCH_NAME" = "dev" ]; then
               CONTAINER_NAME="vps-backend-dev"
               IMAGE_NAME="vps-backend-dev"
               PORT="5001"
@@ -42,11 +47,11 @@ jobs:
               REPO_BRANCH="dev"
               ENV_FILE=".env.dev"
             else
-              echo "Branch not configured for deployment"
+              echo "Branch '$BRANCH_NAME' not configured for deployment"
               exit 1
             fi
 
-            # Clone repo if not exists
+            # Clone repo if it doesn't exist
             if [ ! -d "$PROJECT_DIR" ]; then
               git clone -b $REPO_BRANCH https://github.com/ghulammujtaba153/VPS-Interior-BackEnd.git $PROJECT_DIR
             fi
@@ -73,4 +78,6 @@ jobs:
               --env-file $ENV_FILE \
               -p $PORT:$PORT \
               $IMAGE_NAME
+
+            echo "Deployment of $BRANCH_NAME branch completed successfully!"
           EOF

@@ -1,9 +1,10 @@
-name: Deploy VPS Interior Backend to AWS
+name: Deploy VPS Interior Backend
 
 on:
   push:
     branches:
       - main
+      - dev    # deploy dev branch separately
 
 jobs:
   deploy:
@@ -25,38 +26,51 @@ jobs:
           ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
 
-            # Set variables
-            CONTAINER_NAME="vps-backend"
-            IMAGE_NAME="vps-backend"
-            PORT="5000"
-            PROJECT_DIR="VPS-Interior-BackEnd"
-            REPO_URL="https://github.com/ghulammujtaba153/VPS-Interior-BackEnd.git"
+            # Branch-specific variables
+            if [ "${BRANCH_NAME}" = "main" ]; then
+              CONTAINER_NAME="vps-backend-prod"
+              IMAGE_NAME="vps-backend-prod"
+              PORT="5000"
+              PROJECT_DIR="VPS-Interior-BackEnd"
+              REPO_BRANCH="main"
+              ENV_FILE=".env"
+            elif [ "${BRANCH_NAME}" = "dev" ]; then
+              CONTAINER_NAME="vps-backend-dev"
+              IMAGE_NAME="vps-backend-dev"
+              PORT="5001"
+              PROJECT_DIR="VPS-Interior-BackEnd-Dev"
+              REPO_BRANCH="dev"
+              ENV_FILE=".env.dev"
+            else
+              echo "Branch not configured for deployment"
+              exit 1
+            fi
 
             # Clone repo if not exists
             if [ ! -d "$PROJECT_DIR" ]; then
-              git clone $REPO_URL
+              git clone -b $REPO_BRANCH https://github.com/ghulammujtaba153/VPS-Interior-BackEnd.git $PROJECT_DIR
             fi
 
             cd $PROJECT_DIR
 
             # Pull latest code
-            git fetch origin main
-            git checkout main
-            git pull origin main
+            git fetch origin $REPO_BRANCH
+            git checkout $REPO_BRANCH
+            git pull origin $REPO_BRANCH
 
-            # Remove any container using the same port (safety)
+            # Remove any container using the same port
             docker ps --filter "publish=$PORT" -q | xargs -r docker rm -f
 
-            # Remove old container by name if still present (double safety)
+            # Remove old container by name if still present
             docker rm -f $CONTAINER_NAME || true
 
             # Build Docker image
             docker build -t $IMAGE_NAME .
 
-            # Run Docker container
+            # Run Docker container with branch-specific .env
             docker run -d \
               --name $CONTAINER_NAME \
-              --env-file .env \
+              --env-file $ENV_FILE \
               -p $PORT:$PORT \
               $IMAGE_NAME
           EOF

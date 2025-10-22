@@ -36,6 +36,11 @@ import projectCostSheetModel from './projectCostSheet.model.js';
 import noticeModel from './notice.model.js';
 import employeeDocumentRequestModel from './employeeDocumentRequest.model.js';
 import employeeDocumentsModel from './employeeDocuments.model.js';
+import ProjectSetupJobWorkerModel  from './projectSetupJobWorker.model.js';;
+import ProjectSetupJobModel from './projectSetupJob.model.js';
+import ProjectKanbanModel from './projectKanban.model.js';
+import ProjectGanttChartModel from './projectGanttChart.model.js';
+
 
 dotenv.config();
 
@@ -87,6 +92,10 @@ const ProjectCostSheet = projectCostSheetModel(sequelize, Sequelize.DataTypes);
 const Notice = noticeModel(sequelize, Sequelize.DataTypes);
 const EmployeeDocumentRequest = employeeDocumentRequestModel(sequelize, Sequelize.DataTypes);
 const EmployeeDocuments = employeeDocumentsModel(sequelize, Sequelize.DataTypes);
+const ProjectSetupJob = ProjectSetupJobModel(sequelize, Sequelize.DataTypes);
+const ProjectSetupJobWorker = ProjectSetupJobWorkerModel (sequelize, Sequelize.DataTypes);
+const ProjectKanban = ProjectKanbanModel(sequelize, Sequelize.DataTypes);
+const ProjectGanttChart = ProjectGanttChartModel(sequelize, Sequelize.DataTypes);
 
 // Prepare DB object
 const db = {
@@ -124,6 +133,10 @@ const db = {
   Notice,
   EmployeeDocumentRequest,
   EmployeeDocuments,
+  ProjectSetupJob,
+  ProjectSetupJobWorker,
+  ProjectKanban,
+  ProjectGanttChart,
   sequelize,
   Sequelize,
 };

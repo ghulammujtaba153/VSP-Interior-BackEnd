@@ -25,6 +25,10 @@ import projectVariationRouter from "./project/projectVariation.routes.js";
 import employeeTimeSheetRouter from "./humanResource/employeeTimeSheet.routes.js";
 import noticeRouter from "./humanResource/notice.routes.js";
 import employeeDocumentRouter from "./humanResource/employeeDocument.routes.js";
+import jobSchedulingRouter from "./project/jobScheduling/jobScheduling.routes.js";
+import projectKanbanRouter from "./project/jobScheduling/projectKanban.routes.js";
+import projectGanttChartRouter from "./project/jobScheduling/projectGanttChart.routes.js";
+
 
 const router = express.Router();
 
@@ -54,5 +58,9 @@ router.use('/project-variation', projectVariationRouter);
 router.use("/employee-timesheet", employeeTimeSheetRouter);
 router.use("/notices", noticeRouter);
 router.use("/employee-document", employeeDocumentRouter);
+router.use("/job-scheduling", jobSchedulingRouter);
+router.use("/project-kanban", projectKanbanRouter);
+router.use("/project-gantt-chart", projectGanttChartRouter);
+
 
 export default router;

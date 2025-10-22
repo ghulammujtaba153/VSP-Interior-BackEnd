@@ -1,5 +1,5 @@
 import express from "express";
-import { createKanbanTask, deleteKanbanTask, getKanbanTasksByJob, updateKanbanTask } from "../../../controller/project/jobScheduling/ProjectKanban.controller.js";
+import { createKanbanTask, deleteKanbanTask, getKanbanTasksByJob, updateKanbanTask } from "../../../controller/project/jobScheduling/projectKanban.controller.js";
 
 const projectKanbanRouter = express.Router();
 

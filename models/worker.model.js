@@ -114,6 +114,8 @@ export default (sequelize, DataTypes) => {
 
     Worker.hasMany(models.ProjectKanban, { foreignKey: 'workerId', as: 'assignedWorkers' });
 
+    Worker.hasMany(models.Notes, { foreignKey: 'workerId', as: 'creator' });
+
     Worker.belongsToMany(models.ProjectSetupJob, {
       through: models.ProjectSetupJobWorker,
       foreignKey: 'workerId',

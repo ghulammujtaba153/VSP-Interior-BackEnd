@@ -64,6 +64,11 @@ export default (sequelize, DataTypes) => {
       as: "kanbanTasks",
     });
 
+    ProjectSetupJob.hasMany(models.Notes, {
+      foreignKey: "projectSetupJobId",
+      as: "ProjectNotes",
+    });
+
     ProjectSetupJob.hasMany(models.ProjectGanttChart, {
       foreignKey: "projectSetupJobId",
       as: "ganttChart",

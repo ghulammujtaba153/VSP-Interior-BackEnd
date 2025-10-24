@@ -64,12 +64,12 @@ export default (sequelize, DataTypes) => {
 
   ProjectSetup.associate = (models) => {
     ProjectSetup.belongsTo(models.Clients, { foreignKey: 'clientId', as: 'client' });
-    ProjectSetup.hasMany(models.ProjectRate, { foreignKey: 'projectId', as: 'rates' });
-    ProjectSetup.hasMany(models.ProjectMaterial, { foreignKey: 'projectId', as: 'materials' });
-    ProjectSetup.hasMany(models.ProjectVariation, { foreignKey: 'projectId', as: 'variations' });
-    ProjectSetup.hasMany(models.ProjectAmend, { foreignKey: 'projectId', as: 'amends' });
-    ProjectSetup.hasOne(models.ProjectCostSheet, { foreignKey: 'projectId', as: 'costingSheet' })
-    ProjectSetup.hasMany(models.ProjectSetupJob, { foreignKey: 'projectSetupId', as: 'jobs' });
+    ProjectSetup.hasMany(models.ProjectRate, { foreignKey: 'projectId', as: 'rates', onDelete: 'CASCADE' });
+    ProjectSetup.hasMany(models.ProjectMaterial, { foreignKey: 'projectId', as: 'materials', onDelete: 'CASCADE' });
+    ProjectSetup.hasMany(models.ProjectVariation, { foreignKey: 'projectId', as: 'variations', onDelete: 'CASCADE' });
+    ProjectSetup.hasMany(models.ProjectAmend, { foreignKey: 'projectId', as: 'amends', onDelete: 'CASCADE' });
+    ProjectSetup.hasOne(models.ProjectCostSheet, { foreignKey: 'projectId', as: 'costingSheet', onDelete: 'CASCADE' });
+    ProjectSetup.hasMany(models.ProjectSetupJob, { foreignKey: 'projectSetupId', as: 'jobs', onDelete: 'CASCADE' });
   };
 
   return ProjectSetup;

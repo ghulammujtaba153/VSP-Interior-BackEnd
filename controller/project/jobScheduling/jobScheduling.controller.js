@@ -156,10 +156,20 @@ if (Array.isArray(workerIds)) {
 // ✅ Get Jobs of a Worker
 export const getJobsofWorker = async (req, res) => {
   try {
-    const { workerId } = req.params;
+    const { email } = req.body;
 
-    const worker = await Worker.findByPk(workerId);
-    if (!worker) return res.status(404).json({ message: "Worker not found" });
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    // ✅ use 'where' for Sequelize
+    const worker = await Worker.findOne({ where: { email } });
+
+    if (!worker) {
+      return res.status(404).json({ message: "Worker not found" });
+    }
+
+    const workerId = worker.id;
 
     const jobs = await ProjectSetupJob.findAll({
       include: [
@@ -177,9 +187,13 @@ export const getJobsofWorker = async (req, res) => {
     return res.status(200).json({ total: jobs.length, jobs });
   } catch (error) {
     console.error("Error fetching worker jobs:", error);
-    return res.status(500).json({ message: "Server error while fetching worker jobs", error: error.message });
+    return res.status(500).json({
+      message: "Server error while fetching worker jobs",
+      error: error.message,
+    });
   }
 };
+
 
 // ✅ Delete Job Scheduling
 export const deleteJobScheduling = async (req, res) => {

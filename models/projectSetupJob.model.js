@@ -56,22 +56,27 @@ export default (sequelize, DataTypes) => {
       foreignKey: 'projectSetupJobId',
       otherKey: 'workerId',
       as: 'workers', // Changed from 'assignedWorkers' to 'workers' for consistency
+      // delete only ProjectSetupJobWorker entries when a ProjectSetupJob is deleted
+      onDelete: 'CASCADE'
     });
 
 
     ProjectSetupJob.hasMany(models.ProjectKanban, {
       foreignKey: "projectSetupJobId",
       as: "kanbanTasks",
+      onDelete: 'CASCADE'
     });
 
     ProjectSetupJob.hasMany(models.Notes, {
       foreignKey: "projectSetupJobId",
       as: "ProjectNotes",
+      onDelete: 'CASCADE'
     });
 
     ProjectSetupJob.hasMany(models.ProjectGanttChart, {
       foreignKey: "projectSetupJobId",
       as: "ganttChart",
+      onDelete: 'CASCADE'
     });
   };
 

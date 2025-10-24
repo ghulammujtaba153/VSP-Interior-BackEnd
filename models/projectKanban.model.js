@@ -46,6 +46,14 @@ export default (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: "To Do", // e.g., 'To Do', 'In Progress', 'Done'
       },
+      comments: {
+        type: DataTypes.JSON,
+        allowNull: true,
+      },
+      files: {
+        type: DataTypes.JSON,
+        allowNull: true,
+      },
     },
     {
       tableName: "ProjectKanbans",

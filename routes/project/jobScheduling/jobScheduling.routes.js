@@ -9,7 +9,7 @@ jobSchedulingRouter.get("/get", getJobSchedulings);
 jobSchedulingRouter.get("/get/:id", getJobScheduling);
 
 jobSchedulingRouter.put("/update/:id", updateJobScheduling);
-jobSchedulingRouter.get("/worker/:workerId", getJobsofWorker);
+jobSchedulingRouter.post("/worker", getJobsofWorker);
 jobSchedulingRouter.delete("/delete/:id", deleteJobScheduling);
 
 export default jobSchedulingRouter;

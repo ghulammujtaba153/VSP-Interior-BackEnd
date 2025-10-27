@@ -1,6 +1,6 @@
 import db from '../../models/index.js';
 import { Sequelize, Op } from "sequelize";
-const {Inventory, Audit, Suppliers} = db;
+const {Inventory, Audit, Suppliers, PriceBookCategory, PriceBook} = db;
 
 export const createInventory = async (req, res) => {
     try {
@@ -30,9 +30,16 @@ export const importCSV = async (req, res) => {
       return res.status(400).json({ message: "Invalid data format" });
     }
 
-    // 2️⃣ Fetch all suppliers (only id & name)
+    const { Inventory, Suppliers, PriceBookCategory, PriceBook } = db;
+
+    // 2️⃣ Fetch all suppliers, categories, and pricebooks
     const allSuppliers = await Suppliers.findAll({});
+    const allCategories = await PriceBookCategory.findAll({});
+    const allPriceBooks = await PriceBook.findAll({});
+    
     console.log("allSuppliers", allSuppliers);
+    console.log("allCategories", allCategories);
+    console.log("allPriceBooks", allPriceBooks);
 
     // Map supplier name → supplierId
     const supplierNameToId = new Map();
@@ -40,51 +47,166 @@ export const importCSV = async (req, res) => {
       if (name) supplierNameToId.set(name.toLowerCase().trim(), id);
     });
 
-    // 3️⃣ Process each inventory item
+    // Map category name + supplierId → categoryId
+    const categoryMap = new Map();
+    allCategories.forEach(({ id, name, supplierId }) => {
+      const key = `${supplierId}_${name.toLowerCase().trim()}`;
+      categoryMap.set(key, id);
+    });
+
+    // Map pricebook name + categoryId → pricebookId
+    const priceBookMap = new Map();
+    allPriceBooks.forEach(({ id, name, priceBookCategoryId }) => {
+      const key = `${priceBookCategoryId}_${name.toLowerCase().trim()}`;
+      priceBookMap.set(key, id);
+    });
+
+    // 3️⃣ Cache for categories and pricebooks
+    const categoryCache = new Map(); // {supplierId_categoryName: categoryId}
+    const priceBookCache = new Map(); // {categoryId_priceBookName: {priceBookId, unit}}
+
+    // Helper: Get category - DO NOT CREATE, just lookup
+    const getCategory = (supplierId, categoryName) => {
+      const cacheKey = `${supplierId}_${categoryName.toLowerCase().trim()}`;
+      
+      // Check cache first
+      if (categoryCache.has(cacheKey)) {
+        return categoryCache.get(cacheKey);
+      }
+      
+      // Look up in pre-fetched map
+      const categoryId = categoryMap.get(cacheKey);
+      if (categoryId) {
+        categoryCache.set(cacheKey, categoryId);
+        return categoryId;
+      }
+      
+      return null; // Category not found
+    };
+
+    // Helper: Get pricebook - DO NOT CREATE, just lookup
+    const getPriceBook = (categoryId, priceBookName) => {
+      const cacheKey = `${categoryId}_${priceBookName.toLowerCase().trim()}`;
+      
+      // Check cache first
+      if (priceBookCache.has(cacheKey)) {
+        const cached = priceBookCache.get(cacheKey);
+        return { priceBookId: cached.priceBookId, unit: cached.unit };
+      }
+      
+      // Look up in pre-fetched map
+      const priceBookId = priceBookMap.get(cacheKey);
+      if (priceBookId) {
+        const priceBook = allPriceBooks.find(pb => pb.id === priceBookId);
+        if (priceBook) {
+          priceBookCache.set(cacheKey, { priceBookId: priceBook.id, unit: priceBook.unit });
+          return { priceBookId: priceBook.id, unit: priceBook.unit };
+        }
+      }
+      
+      return null; // Price book not found
+    };
+
+    // 4️⃣ Process each inventory item
     const processedInventory = [];
-    const invalidSuppliers = [];
     const skippedSuppliers = [];
 
     for (const item of inventory) {
       const supplierName = item?.supplierName?.trim();
 
       if (!supplierName) {
-        invalidSuppliers.push({
+        skippedSuppliers.push({
           itemName: item.name || "(unnamed)",
           supplierName: "(empty/missing)",
+          category: item.category || "(not provided)",
+          priceBook: item.priceBook || "(not provided)",
+          reason: "Supplier name is missing",
         });
         continue;
       }
 
       const supplierId = supplierNameToId.get(supplierName.toLowerCase());
 
-      if (supplierId) {
-        // Ensure supplier still exists in DB (safety check)
-        const exists = allSuppliers.find((s) => s.id === supplierId);
-        if (!exists) {
+      if (!supplierId) {
+        skippedSuppliers.push({
+          itemName: item.name,
+          supplierName: supplierName,
+          category: item.category || "(not provided)",
+          priceBook: item.priceBook || "(not provided)",
+          reason: "Supplier not found in database. Please add the supplier first.",
+        });
+        continue;
+      }
+
+      // Get category - REQUIRED field in model
+      const categoryName = item.category || item.categoryName;
+      if (!categoryName) {
+        skippedSuppliers.push({
+          itemName: item.name,
+          supplierName: supplierName,
+          category: "(not provided)",
+          priceBook: item.priceBook || "(not provided)",
+          reason: "Category is required. Please add category to the supplier first.",
+        });
+        continue;
+      }
+
+      const categoryId = getCategory(supplierId, categoryName);
+      if (!categoryId) {
+        skippedSuppliers.push({
+          itemName: item.name,
+          supplierName: supplierName,
+          category: categoryName,
+          priceBook: item.priceBook || "(not provided)",
+          reason: `Category "${categoryName}" not found for this supplier. Please add the category first.`,
+        });
+        continue;
+      }
+
+      // Get pricebook (optional)
+      const priceBookName = item.priceBook || item.priceBookName;
+      let priceBookId = null;
+      if (priceBookName) {
+        const priceBook = getPriceBook(categoryId, priceBookName);
+        if (!priceBook) {
           skippedSuppliers.push({
             itemName: item.name,
-            supplierName,
-            reason: `Supplier ID ${supplierId} not found in DB`,
+            supplierName: supplierName,
+            category: categoryName,
+            priceBook: priceBookName,
+            reason: `Price book "${priceBookName}" not found for this category. Please add the price book first.`,
           });
           continue;
         }
-
-        const { supplierName: _, ...restItem } = item;
-        processedInventory.push({
-          ...restItem,
-          supplierId,
-        });
-      } else {
-        skippedSuppliers.push({
-          itemName: item.name,
-          supplierName,
-          reason: "Supplier not found in DB",
-        });
+        priceBookId = priceBook.priceBookId;
       }
+
+      // Build inventory item
+      const inventoryItem = {
+        name: item.name?.trim(),
+        description: item.description?.trim() || null,
+        category: categoryId, // REQUIRED field in model
+        priceBookId: priceBookId,
+        supplierId: supplierId,
+        costPrice: item.costPrice || 0,
+        quantity: item.quantity || 0,
+        notes: item.notes?.trim() || null,
+        status: item.status?.toLowerCase() === "active" ? "active" : "inactive",
+      };
+
+      processedInventory.push(inventoryItem);
     }
 
-    // 4️⃣ Deduplicate by name
+    // 5️⃣ Check if there are any items to insert
+    if (processedInventory.length === 0) {
+      return res.status(400).json({
+        message: "No valid items to insert. Please check the errors below and add missing suppliers, categories, or pricebooks first.",
+        skippedCount: skippedSuppliers.length,
+        skippedSuppliers,
+      });
+    }
+
+    // 6️⃣ Deduplicate by name
     const uniqueByName = [];
     const seen = new Set();
     for (const item of processedInventory) {
@@ -95,7 +217,8 @@ export const importCSV = async (req, res) => {
       }
     }
     console.log("processedInventory", processedInventory);
-    // 5️⃣ Filter out existing inventory names
+    
+    // 7️⃣ Filter out existing inventory names
     const existing = await Inventory.findAll({ attributes: ["name"], raw: true });
     const existingNames = new Set(existing.map((e) => e.name.toLowerCase().trim()));
     console.log("existingNames", existingNames);
@@ -105,21 +228,23 @@ export const importCSV = async (req, res) => {
 
     console.log("toInsert", toInsert);
 
-    // 6️⃣ Insert new inventory
+    // 8️⃣ Insert new inventory
     const created =
       toInsert.length > 0
         ? await Inventory.bulkCreate(toInsert, { returning: true })
         : [];
 
-    // 7️⃣ Audit log
-    await Audit.create({
-      userId,
-      action: "import",
-      tableName: "inventory",
-      newData: created.map((r) => (r.get ? r.get() : r)),
-    });
+    // 9️⃣ Audit log
+    if (created.length > 0) {
+      await Audit.create({
+        userId,
+        action: "import",
+        tableName: "inventory",
+        newData: created.map((r) => (r.get ? r.get() : r)),
+      });
+    }
 
-    // 8️⃣ Prepare result
+    // 🔟 Prepare result
     return res.status(201).json({
       message: `Inventory import completed: ${created.length} inserted, ${skippedSuppliers.length} skipped.`,
       insertedCount: created.length,

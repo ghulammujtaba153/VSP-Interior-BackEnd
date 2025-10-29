@@ -4,9 +4,9 @@ import { createPriceBookCategory, deletePriceBookCategory, getPriceBookCategorie
 const priceBookCategoryRouter = express.Router();
 
 priceBookCategoryRouter.post('/create', createPriceBookCategory);
-priceBookCategoryRouter.get('/get/:id', getPriceBookCategories);
+priceBookCategoryRouter.get('/get', getPriceBookCategories); // No :id needed - categories are independent
 priceBookCategoryRouter.put('/update/:id', updatePriceBookCategory);
 priceBookCategoryRouter.delete('/delete/:id', deletePriceBookCategory);
-priceBookCategoryRouter.get('/versions/:supplierId', getAvailableVersions);
+priceBookCategoryRouter.get('/versions/:categoryId', getAvailableVersions); // Changed to categoryId
 
 export default priceBookCategoryRouter;

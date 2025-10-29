@@ -1,18 +1,11 @@
 export default (sequelize, DataTypes) => {
+
     const PriceBookCategory = sequelize.define('PriceBookCategory', {
         id: {
             type: DataTypes.INTEGER,
             autoIncrement: true,
             allowNull: false,
             primaryKey: true,
-        },
-        supplierId: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'Suppliers',
-                key: 'id',
-            },
         },
         name: {
             type: DataTypes.STRING,
@@ -40,20 +33,10 @@ export default (sequelize, DataTypes) => {
     }, {
         tableName: 'PriceBookCategory',
         timestamps: true,
-        indexes: [
-            {
-                unique: true,
-                fields: ['name', 'supplierId'],
-                name: 'unique_category_name_supplier'
-            }
-        ]
+        
     })
 
     PriceBookCategory.associate = (models) => {
-        PriceBookCategory.belongsTo(models.Suppliers, {
-            foreignKey: 'supplierId',
-            onDelete: 'CASCADE',
-        });
 
         PriceBookCategory.hasMany(models.PriceBook, {
             foreignKey: 'priceBookCategoryId',

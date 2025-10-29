@@ -5,13 +5,12 @@ import { Op } from 'sequelize';
 
 export const createPriceBookCategory = async (req, res) => {
     try {
-        const { name, supplierId } = req.body;
+        const { name } = req.body;
         
-        // Check if category with same name already exists for this supplier
+        // Check if category with same name already exists (globally, no supplierId constraint)
         const existingCategory = await PriceBookCategory.findOne({
             where: {
-                name: name,
-                supplierId: supplierId
+                name: name
             }
         });
 
@@ -38,9 +37,12 @@ export const getPriceBookCategories = async (req, res) => {
         ];
     }
 
-    whereClause.supplierId = req.params.id;
+    // Categories are independent - no supplierId filtering
     try {
-        const priceBookCategories = await PriceBookCategory.findAll({ where: whereClause });
+        const priceBookCategories = await PriceBookCategory.findAll({ 
+            where: whereClause,
+            order: [['name', 'ASC']]
+        });
         res.status(200).json(priceBookCategories);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -54,14 +56,13 @@ export const getPriceBookCategories = async (req, res) => {
 export const updatePriceBookCategory = async (req, res) => {
     try {
         const categoryId = req.params.id;
-        const { name, supplierId } = req.body;
+        const { name } = req.body;
 
-        // Check if another category with same name already exists for this supplier
-        if (name && supplierId) {
+        // Check if another category with same name already exists (globally)
+        if (name) {
             const existingCategory = await PriceBookCategory.findOne({
                 where: {
-                    name: name,
-                    supplierId: supplierId
+                    name: name
                 }
             });
 
@@ -96,21 +97,13 @@ export const deletePriceBookCategory = async (req, res) => {
 
 export const getAvailableVersions = async (req, res) => {
     try {
-        const { supplierId } = req.params;
+        const { categoryId } = req.params;
         
-        const categories = await PriceBookCategory.findAll({
-            where: { supplierId },
-            attributes: ['id']
-        });
-        
-        const categoryIds = categories.map(c => c.id);
-        
-        if (categoryIds.length === 0) {
-            return res.status(200).json({ versions: ['v1'] });
-        }
+        // Get versions for a specific category, or all categories if not specified
+        const whereClause = categoryId ? { priceBookCategoryId: categoryId } : {};
         
         const priceBookVersions = await PriceBook.findAll({
-            where: { priceBookCategoryId: categoryIds },
+            where: whereClause,
             attributes: ['version'],
             group: ['version'],
             raw: true

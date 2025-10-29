@@ -69,9 +69,9 @@ export default (sequelize, DataTypes) => {
             onDelete: 'CASCADE',
         });
 
-        Supplier.hasMany(models.PriceBookCategory, {
+        Supplier.hasMany(models.PriceBook, {
             foreignKey: 'supplierId',
-            as: 'priceBookCategory',
+            as: 'priceBooks',
             onDelete: 'CASCADE',
         });
 

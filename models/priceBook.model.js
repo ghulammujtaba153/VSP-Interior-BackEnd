@@ -1,9 +1,18 @@
 export default (sequelize, DataTypes) => {
+   
     const PriceBook = sequelize.define('priceBooks', {
         id: {
             type: DataTypes.INTEGER,
             autoIncrement: true,
             primaryKey: true,
+        },
+        supplierId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'Suppliers',
+                key: 'id',
+            },
         },
         priceBookCategoryId: {
             type: DataTypes.INTEGER,
@@ -85,12 +94,18 @@ export default (sequelize, DataTypes) => {
     })
 
     PriceBook.associate = (models) => {
-        PriceBook.belongsTo(models.PriceBookCategory, {
-            foreignKey: 'priceBookCategoryId',
-            onDelete: 'CASCADE',
-        });
+ 
         PriceBook.hasMany(models.Inventory, {
             foreignKey: 'priceBookId',
+            onDelete: 'CASCADE',
+        });
+        PriceBook.belongsTo(models.Suppliers, {
+            foreignKey: 'supplierId',
+            onDelete: 'CASCADE',
+        });
+
+        PriceBook.belongsTo(models.PriceBookCategory, {
+            foreignKey: 'priceBookCategoryId',
             onDelete: 'CASCADE',
         });
     };

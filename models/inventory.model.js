@@ -51,8 +51,8 @@ export default (sequelize, DataTypes) => {
   );
 
   Inventory.associate = (models) => {
-    Inventory.belongsTo(models.Suppliers, { foreignKey: "supplierId", as: "supplier" });
-    Inventory.belongsTo(models.PriceBookCategory, { foreignKey: "category", as: "categoryDetails" });
+    Inventory.belongsTo(models.Suppliers, { foreignKey: "supplierId", as: "supplier" }, { onDelete: "CASCADE" });
+    Inventory.belongsTo(models.PriceBookCategory, { foreignKey: "category", as: "categoryDetails" }, { onDelete: "CASCADE" });
     Inventory.belongsTo(models.PriceBook, {
       foreignKey: "priceBookId",
       as: "priceBooks",

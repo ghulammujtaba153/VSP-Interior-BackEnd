@@ -7,12 +7,23 @@ const { PriceBook, PriceBookCategory, Suppliers } = db;
 
 export const createPriceBook = async (req, res) => {
   try {
-    const { priceBookCategoryId, name, version } = req.body;
+    const { priceBookCategoryId, name, version, supplierId } = req.body;
+
+    // Validate required fields
+    if (!supplierId) {
+      return res.status(400).json({ error: "supplierId is required" });
+    }
 
     // Verify category exists
     const category = await PriceBookCategory.findByPk(priceBookCategoryId);
     if (!category) {
       return res.status(404).json({ error: "Category not found" });
+    }
+
+    // Verify supplier exists
+    const supplier = await Suppliers.findByPk(supplierId);
+    if (!supplier) {
+      return res.status(404).json({ error: "Supplier not found" });
     }
 
     const targetVersion = version || "v1";
@@ -48,9 +59,10 @@ export const createPriceBook = async (req, res) => {
       );
     }
 
-    // Create new version
+    // Create new version with supplierId
     const priceBook = await PriceBook.create({
       ...req.body,
+      supplierId,
       version: targetVersion,
     });
 
@@ -65,25 +77,30 @@ export const importPriceBook = async (req, res) => {
     try {
         const { userId, supplierId, items, version } = req.body;
         if (!Array.isArray(items) || items.length === 0 || !supplierId) {
-            return res.status(400).json({ message: 'Invalid data format' });
+            return res.status(400).json({ message: 'Invalid data format. supplierId and items array are required.' });
         }
 
         const targetVersion = version || 'v1';
 
-        // 1) Ensure categories exist for this supplier
+        // 1) Ensure categories exist (categories are now independent, no supplierId)
         const categoryNames = Array.from(new Set(items.map(i => i.category).filter(Boolean)));
 
-        // Fetch existing categories for this supplier
+        // Verify supplier exists
+        const supplier = await Suppliers.findByPk(supplierId);
+        if (!supplier) {
+            return res.status(404).json({ message: 'Supplier not found' });
+        }
+
+        // Fetch existing categories (categories are now independent, no supplier filter)
         const existingCategories = await PriceBookCategory.findAll({
-            where: { supplierId },
             attributes: ['id', 'name']
         });
         const nameToId = new Map(existingCategories.map(c => [c.name, c.id]));
 
-        // Determine which categories need to be created
+        // Determine which categories need to be created (without supplierId)
         const toCreate = categoryNames
             .filter(name => !nameToId.has(name))
-            .map(name => ({ name, supplierId }));
+            .map(name => ({ name })); // No supplierId in category
         const createdCategories = toCreate.length > 0
             ? await PriceBookCategory.bulkCreate(toCreate, { returning: true })
             : [];
@@ -108,9 +125,10 @@ export const importPriceBook = async (req, res) => {
         });
         const existsKey = new Set(existingItems.map(i => `${i.priceBookCategoryId}::${i.name}::${i.version}`));
 
-        // 4) Prepare new rows (skip duplicates)
+        // 4) Prepare new rows (skip duplicates, include supplierId)
         const rowsToInsert = uniqueItems
             .map(i => ({
+                supplierId, // Add supplierId to each pricebook item
                 priceBookCategoryId: nameToId.get(i.category),
                 name: i.name,
                 description: i.description || null,
@@ -147,14 +165,16 @@ export const getPriceBook = async (req, res) => {
             where: {
                 priceBookCategoryId: req.params.id
             },
-            include: [{ model: PriceBookCategory,
-                include: [
-            {
-              model: Suppliers,
-              attributes: ["id", "name", "email", "phone"],
-            },
-          ],
-             }]
+            include: [
+                { 
+                    model: PriceBookCategory,
+                    attributes: ["id", "name"]
+                },
+                {
+                    model: Suppliers,
+                    attributes: ["id", "name", "email", "phone"],
+                }
+            ]
         });
         res.status(200).json(priceBook);
     } catch (error) {
@@ -166,7 +186,15 @@ export const getPriceBook = async (req, res) => {
 export const updatePriceBook = async (req, res) => {
     try {
         const itemId = req.params.id;
-        const { name, priceBookCategoryId, version } = req.body;
+        const { name, priceBookCategoryId, version, supplierId } = req.body;
+
+        // Validate supplier exists if supplierId is provided
+        if (supplierId) {
+            const supplier = await Suppliers.findByPk(supplierId);
+            if (!supplier) {
+                return res.status(404).json({ error: 'Supplier not found' });
+            }
+        }
 
         if (name || priceBookCategoryId || version) {
             // Get current item

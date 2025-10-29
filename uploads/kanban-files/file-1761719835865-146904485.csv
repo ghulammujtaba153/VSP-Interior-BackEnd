@@ -1,0 +1,4 @@
+id,name,email,password,roleId,status,createdAt,updatedAt
+1,superadmin,vishal@vspinteriors.co.nz,$2b$10$R7PqmAIW3dGvuIEOWE4xku/NqA525FhfteCTUpOWu3F4v3GZrMqPe,1,active,2025-08-08 05:43:16.77+00,2025-08-22 17:15:24.206+00
+22,Ibraheem,dodixix560@futurejs.com,$2b$10$7nVW21.S7u.LLlMeDka6HOnoq3jk3iW6Q68lT2n3cTddfQMB3zwSu,2,active,2025-08-29 15:34:46.842+00,2025-08-29 15:35:23.045+00
+23,test,test@gmail.com,$2b$10$2dQ.nRzzmkB58G/ppAYmIOLBgDPLpUxV.KZHfO7/47OtCfz4s/GPK,1,active,2025-08-30 11:27:27.895+00,2025-09-30 07:54:06.439+00

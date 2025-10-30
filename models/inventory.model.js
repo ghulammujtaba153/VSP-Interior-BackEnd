@@ -24,7 +24,7 @@ export default (sequelize, DataTypes) => {
       },
       category: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: { model: "PriceBookCategory", key: "id" },
       },
       priceBookId: {
@@ -52,7 +52,15 @@ export default (sequelize, DataTypes) => {
 
   Inventory.associate = (models) => {
     Inventory.belongsTo(models.Suppliers, { foreignKey: "supplierId", as: "supplier" }, { onDelete: "CASCADE" });
-    Inventory.belongsTo(models.PriceBookCategory, { foreignKey: "category", as: "categoryDetails" }, { onDelete: "CASCADE" });
+    Inventory.belongsTo(models.PriceBookCategory, {
+      foreignKey: "category",
+      as: "categoryDetails",
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
+    });
+
+    // Inventory.belongsTo(models.PriceBookCategory, { foreignKey: "category", as: "categoryDetails" }, { onDelete: 'SET NULL',
+    //   onUpdate: 'CASCADE', });
     Inventory.belongsTo(models.PriceBook, {
       foreignKey: "priceBookId",
       as: "priceBooks",

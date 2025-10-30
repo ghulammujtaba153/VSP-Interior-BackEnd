@@ -1,9 +1,26 @@
 import db from '../../models/index.js';
 const { CabinetSubCategories, CabinetCategories } = db;
+const { Op } = db.Sequelize;
 
 
 export const createCabinetSubCategory = async (req, res) => {
     try {
+        const { name, categoryId } = req.body;
+
+        // Check if subcategory with same name and categoryId already exists
+        const existingSubcategory = await CabinetSubCategories.findOne({
+            where: { 
+                name: name,
+                categoryId: categoryId
+            }
+        });
+
+        if (existingSubcategory) {
+            return res.status(400).json({ 
+                message: `Subcategory "${name}" already exists in this category` 
+            });
+        }
+
         const cabinetSubCategory = await CabinetSubCategories.create(req.body);
         res.status(201).json(cabinetSubCategory);
     } catch (error) {
@@ -13,6 +30,7 @@ export const createCabinetSubCategory = async (req, res) => {
 
 
 export const importCSV = async (req, res) => {
+  console.log(req.body);
   try {
     let data = req.body.data;
 
@@ -20,44 +38,80 @@ export const importCSV = async (req, res) => {
       return res.status(400).json({ message: "Invalid data format" });
     }
 
-    // Deduplicate request by subcategory name
+    // Normalize input: trim, single-space, and Title-case as per model setter
+    const formatName = (value) => {
+      if (typeof value !== 'string') return value;
+      const trimmed = value.trim().replace(/\s+/g, ' ');
+      if (trimmed.length === 0) return trimmed;
+      return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+    };
+
+    const normalized = data.map((item) => ({
+      categoryId: Number(item.categoryId),
+      name: formatName(item.name)
+    }));
+
+    // Deduplicate request by (categoryId, name)
     const uniqueData = [];
     const seen = new Set();
-    for (const item of data) {
-      if (!seen.has(item.name)) {
+    for (const item of normalized) {
+      const key = `${item.categoryId}-${item.name}`;
+      if (!seen.has(key)) {
         uniqueData.push(item);
-        seen.add(item.name);
+        seen.add(key);
       }
     }
 
-    const uniqueNames = uniqueData.map((i) => i.name);
-
-    // Find existing subcategories by name
-    const existingMatches = await CabinetSubCategories.findAll({
+    // Find all existing matching (categoryId, name)
+    const existing = await CabinetSubCategories.findAll({
       attributes: ["id", "name", "categoryId"],
-      where: { name: uniqueNames }
+      where: {
+        [Op.or]: uniqueData.map((i) => ({ name: i.name, categoryId: i.categoryId }))
+      }
     });
 
-    const existingNamesSet = new Set(existingMatches.map((e) => e.name));
+    const existingKeys = new Set(
+      existing.map((e) => `${Number(e.categoryId)}-${e.name}`)
+    );
 
-    // Determine which need to be created
-    const newData = uniqueData.filter((item) => !existingNamesSet.has(item.name));
+    // Only create those not existing
+    const toCreate = uniqueData.filter(
+      (i) => !existingKeys.has(`${i.categoryId}-${i.name}`)
+    );
 
-    // Create new ones (if any) and return created rows
-    const createdRecords = newData.length
-      ? await CabinetSubCategories.bulkCreate(newData, { returning: true })
-      : [];
+    // Create new subcategories, ignoring duplicates at DB level as a safety net
+    if (toCreate.length > 0) {
+      await CabinetSubCategories.bulkCreate(toCreate, {
+        ignoreDuplicates: true,
+        returning: true
+      });
+    }
 
-    // Combine existing and newly created, so the client gets IDs for all requested names
-    const combined = [...existingMatches, ...createdRecords];
+    // Fetch all final records to return (covers both existing and newly created)
+    const finalRecords = await CabinetSubCategories.findAll({
+      attributes: ["id", "name", "categoryId"],
+      where: {
+        [Op.or]: uniqueData.map((i) => ({ name: i.name, categoryId: i.categoryId }))
+      },
+      order: [["categoryId", "ASC"], ["name", "ASC"]]
+    });
+
+    const insertedCount = Math.max(0, finalRecords.length - existing.length);
+
+    const plainCombined = finalRecords.map((item) => ({
+      id: item.id,
+      name: item.name,
+      categoryId: item.categoryId
+    }));
 
     // Respond with 201 in all success cases so client flow can continue
     return res.status(201).json({
-      message: newData.length === 0
-        ? "Subcategories imported successfully, these are categories exist in database"
-        : "Subcategories imported successfully, new records inserted: " + createdRecords.length + ". skipped: " + (data.length - createdRecords.length),
-      insertedCount: createdRecords.length,
-      cabinetSubCategory: combined,
+      message:
+        insertedCount === 0
+          ? "Subcategories imported successfully; all already existed"
+          : `Subcategories imported successfully, new records inserted: ${insertedCount}. skipped: ${uniqueData.length - insertedCount}`,
+      insertedCount,
+      cabinetSubCategory: plainCombined,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

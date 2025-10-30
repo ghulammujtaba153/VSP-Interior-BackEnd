@@ -49,9 +49,12 @@ export const insertCabinet = async (req, res) => {
     const existingCodes = new Set(cabinetFromDB.map((c) => c.code));
 
     // filter out cabinets that already exist in DB
-    const newCabinets = uniqueCabinets.filter(
-      (cabinet) => !existingCodes.has(cabinet.code)
-    );
+    // Keep the original field names as they match the model
+    const newCabinets = uniqueCabinets
+      .filter(
+        (cabinet) => !existingCodes.has(cabinet.code)
+      );
+
 
     // insert only new cabinets (if any)
     const createdCabinets =

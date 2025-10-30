@@ -34,12 +34,14 @@ export default (sequelize, DataTypes) => {
         },
     }, {
         tableName: 'cabinetSubCategories',
+        
     });
 
     CabinetSubCategories.associate = (models) => {
         CabinetSubCategories.belongsTo(models.CabinetCategories, { foreignKey: 'categoryId' });
     };
 
+    
     
 
     return CabinetSubCategories;

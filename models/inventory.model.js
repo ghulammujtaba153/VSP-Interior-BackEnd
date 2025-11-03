@@ -27,10 +27,10 @@ export default (sequelize, DataTypes) => {
         allowNull: true,
         references: { model: "PriceBookCategory", key: "id" },
       },
-      priceBookId: {
-        type: DataTypes.INTEGER,
-        allowNull: true, 
-      },
+      // priceBookId: {
+      //   type: DataTypes.INTEGER,
+      //   allowNull: true, 
+      // },
       supplierId: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -40,8 +40,8 @@ export default (sequelize, DataTypes) => {
       quantity: { type: DataTypes.INTEGER, allowNull: false },
       notes: { type: DataTypes.TEXT, allowNull: true },
       status: {
-        type: DataTypes.ENUM("active", "inactive"),
-        defaultValue: "active",
+        type: DataTypes.ENUM("In Stock", "Low Stock", "Out of Stock"),
+        defaultValue: "In Stock",
       },
     },
     {
@@ -61,10 +61,16 @@ export default (sequelize, DataTypes) => {
 
     // Inventory.belongsTo(models.PriceBookCategory, { foreignKey: "category", as: "categoryDetails" }, { onDelete: 'SET NULL',
     //   onUpdate: 'CASCADE', });
-    Inventory.belongsTo(models.PriceBook, {
-      foreignKey: "priceBookId",
-      as: "priceBooks",
+    // Inventory.belongsTo(models.PriceBook, {
+    //   foreignKey: "priceBookId",
+    //   as: "priceBooks",
+    //   onDelete: "CASCADE",
+    // });
+    Inventory.hasMany(models.PurchaseLineItem, {
+      foreignKey: "itemId",
+      as: "purchaseLineItems",
       onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
   };
 

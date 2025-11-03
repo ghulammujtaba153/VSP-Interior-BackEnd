@@ -41,6 +41,8 @@ import ProjectSetupJobModel from './projectSetupJob.model.js';
 import ProjectKanbanModel from './projectKanban.model.js';
 import ProjectGanttChartModel from './projectGanttChart.model.js';
 import NotesModel from './notes.model.js';
+import ProjectPurchaseModel from './projectPurchase.model.js';
+import PurchaseLineItemModel from './purchaseLineItem.model.js';
 
 dotenv.config();
 
@@ -97,7 +99,8 @@ const ProjectSetupJobWorker = ProjectSetupJobWorkerModel (sequelize, Sequelize.D
 const ProjectKanban = ProjectKanbanModel(sequelize, Sequelize.DataTypes);
 const ProjectGanttChart = ProjectGanttChartModel(sequelize, Sequelize.DataTypes);
 const Notes = NotesModel(sequelize, Sequelize.DataTypes);
-
+const ProjectPurchase = ProjectPurchaseModel(sequelize, Sequelize.DataTypes);
+const PurchaseLineItem = PurchaseLineItemModel(sequelize, Sequelize.DataTypes);
 
 // Prepare DB object
 const db = {
@@ -140,6 +143,8 @@ const db = {
   ProjectKanban,
   ProjectGanttChart,
   Notes,
+  ProjectPurchase,
+  PurchaseLineItem,
   sequelize,
   Sequelize,
 };

@@ -80,6 +80,12 @@ export default (sequelize, DataTypes) => {
             as: 'projectMaterial',
             onDelete: 'CASCADE',
         });
+
+        Supplier.hasMany(models.ProjectPurchase, {
+            foreignKey: 'supplierId',
+            as: 'purchases',
+            onDelete: 'CASCADE',
+        });
     };
 
     return Supplier;

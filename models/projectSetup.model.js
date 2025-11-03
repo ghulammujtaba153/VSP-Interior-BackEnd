@@ -70,6 +70,7 @@ export default (sequelize, DataTypes) => {
     ProjectSetup.hasMany(models.ProjectAmend, { foreignKey: 'projectId', as: 'amends', onDelete: 'CASCADE' });
     ProjectSetup.hasOne(models.ProjectCostSheet, { foreignKey: 'projectId', as: 'costingSheet', onDelete: 'CASCADE' });
     ProjectSetup.hasMany(models.ProjectSetupJob, { foreignKey: 'projectSetupId', as: 'jobs', onDelete: 'CASCADE' });
+    ProjectSetup.hasMany(models.ProjectPurchase, { foreignKey: 'projectId', as: 'purchases', onDelete: 'CASCADE' });
   };
 
   return ProjectSetup;

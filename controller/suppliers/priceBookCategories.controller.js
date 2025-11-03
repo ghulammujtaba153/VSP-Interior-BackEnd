@@ -41,7 +41,7 @@ export const getPriceBookCategories = async (req, res) => {
     try {
         const priceBookCategories = await PriceBookCategory.findAll({ 
             where: whereClause,
-            order: [['name', 'ASC']]
+            order: [['id', 'ASC']]
         });
         res.status(200).json(priceBookCategories);
     } catch (error) {

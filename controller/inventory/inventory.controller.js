@@ -30,16 +30,14 @@ export const importCSV = async (req, res) => {
       return res.status(400).json({ message: "Invalid data format" });
     }
 
-    const { Inventory, Suppliers, PriceBookCategory, PriceBook } = db;
+    const { Inventory, Suppliers, PriceBookCategory } = db;
 
-    // 2️⃣ Fetch all suppliers, categories, and pricebooks
+    // 2️⃣ Fetch all suppliers and categories (categories are independent of suppliers)
     const allSuppliers = await Suppliers.findAll({});
     const allCategories = await PriceBookCategory.findAll({});
-    const allPriceBooks = await PriceBook.findAll({});
     
     console.log("allSuppliers", allSuppliers);
     console.log("allCategories", allCategories);
-    console.log("allPriceBooks", allPriceBooks);
 
     // Map supplier name → supplierId
     const supplierNameToId = new Map();
@@ -47,27 +45,19 @@ export const importCSV = async (req, res) => {
       if (name) supplierNameToId.set(name.toLowerCase().trim(), id);
     });
 
-    // Map category name + supplierId → categoryId
+    // Map category name → categoryId (categories are independent, no supplierId)
     const categoryMap = new Map();
-    allCategories.forEach(({ id, name, supplierId }) => {
-      const key = `${supplierId}_${name.toLowerCase().trim()}`;
+    allCategories.forEach(({ id, name }) => {
+      const key = name.toLowerCase().trim();
       categoryMap.set(key, id);
     });
 
-    // Map pricebook name + categoryId → pricebookId
-    const priceBookMap = new Map();
-    allPriceBooks.forEach(({ id, name, priceBookCategoryId }) => {
-      const key = `${priceBookCategoryId}_${name.toLowerCase().trim()}`;
-      priceBookMap.set(key, id);
-    });
-
-    // 3️⃣ Cache for categories and pricebooks
-    const categoryCache = new Map(); // {supplierId_categoryName: categoryId}
-    const priceBookCache = new Map(); // {categoryId_priceBookName: {priceBookId, unit}}
+    // 3️⃣ Cache for categories
+    const categoryCache = new Map(); // {categoryName: categoryId}
 
     // Helper: Get category - DO NOT CREATE, just lookup
-    const getCategory = (supplierId, categoryName) => {
-      const cacheKey = `${supplierId}_${categoryName.toLowerCase().trim()}`;
+    const getCategory = (categoryName) => {
+      const cacheKey = categoryName.toLowerCase().trim();
       
       // Check cache first
       if (categoryCache.has(cacheKey)) {
@@ -84,29 +74,6 @@ export const importCSV = async (req, res) => {
       return null; // Category not found
     };
 
-    // Helper: Get pricebook - DO NOT CREATE, just lookup
-    const getPriceBook = (categoryId, priceBookName) => {
-      const cacheKey = `${categoryId}_${priceBookName.toLowerCase().trim()}`;
-      
-      // Check cache first
-      if (priceBookCache.has(cacheKey)) {
-        const cached = priceBookCache.get(cacheKey);
-        return { priceBookId: cached.priceBookId, unit: cached.unit };
-      }
-      
-      // Look up in pre-fetched map
-      const priceBookId = priceBookMap.get(cacheKey);
-      if (priceBookId) {
-        const priceBook = allPriceBooks.find(pb => pb.id === priceBookId);
-        if (priceBook) {
-          priceBookCache.set(cacheKey, { priceBookId: priceBook.id, unit: priceBook.unit });
-          return { priceBookId: priceBook.id, unit: priceBook.unit };
-        }
-      }
-      
-      return null; // Price book not found
-    };
-
     // 4️⃣ Process each inventory item
     const processedInventory = [];
     const skippedSuppliers = [];
@@ -119,7 +86,6 @@ export const importCSV = async (req, res) => {
           itemName: item.name || "(unnamed)",
           supplierName: "(empty/missing)",
           category: item.category || "(not provided)",
-          priceBook: item.priceBook || "(not provided)",
           reason: "Supplier name is missing",
         });
         continue;
@@ -132,53 +98,42 @@ export const importCSV = async (req, res) => {
           itemName: item.name,
           supplierName: supplierName,
           category: item.category || "(not provided)",
-          priceBook: item.priceBook || "(not provided)",
           reason: "Supplier not found in database. Please add the supplier first.",
         });
         continue;
       }
 
-      // Get category - REQUIRED field in model
+      // Get category - REQUIRED field in model (independent of supplier)
       const categoryName = item.category || item.categoryName;
       if (!categoryName) {
         skippedSuppliers.push({
           itemName: item.name,
           supplierName: supplierName,
           category: "(not provided)",
-          priceBook: item.priceBook || "(not provided)",
-          reason: "Category is required. Please add category to the supplier first.",
+          reason: "Category is required. Please add the category first.",
         });
         continue;
       }
 
-      const categoryId = getCategory(supplierId, categoryName);
+      const categoryId = getCategory(categoryName);
       if (!categoryId) {
         skippedSuppliers.push({
           itemName: item.name,
           supplierName: supplierName,
           category: categoryName,
-          priceBook: item.priceBook || "(not provided)",
-          reason: `Category "${categoryName}" not found for this supplier. Please add the category first.`,
+          reason: `Category "${categoryName}" not found. Please add the category first.`,
         });
         continue;
       }
 
-      // Get pricebook (optional)
-      const priceBookName = item.priceBook || item.priceBookName;
-      let priceBookId = null;
-      if (priceBookName) {
-        const priceBook = getPriceBook(categoryId, priceBookName);
-        if (!priceBook) {
-          skippedSuppliers.push({
-            itemName: item.name,
-            supplierName: supplierName,
-            category: categoryName,
-            priceBook: priceBookName,
-            reason: `Price book "${priceBookName}" not found for this category. Please add the price book first.`,
-          });
-          continue;
+      // Validate and map status to enum values
+      let status = "In Stock"; // Default
+      const statusValue = item.status?.trim();
+      if (statusValue) {
+        const normalizedStatus = statusValue.charAt(0).toUpperCase() + statusValue.slice(1).toLowerCase();
+        if (["In Stock", "Low Stock", "Out of Stock"].includes(normalizedStatus)) {
+          status = normalizedStatus;
         }
-        priceBookId = priceBook.priceBookId;
       }
 
       // Build inventory item
@@ -186,12 +141,11 @@ export const importCSV = async (req, res) => {
         name: item.name?.trim(),
         description: item.description?.trim() || null,
         category: categoryId, // REQUIRED field in model
-        priceBookId: priceBookId,
         supplierId: supplierId,
         costPrice: item.costPrice || 0,
         quantity: item.quantity || 0,
         notes: item.notes?.trim() || null,
-        status: item.status?.toLowerCase() === "active" ? "active" : "inactive",
+        status: status,
       };
 
       processedInventory.push(inventoryItem);
@@ -200,7 +154,7 @@ export const importCSV = async (req, res) => {
     // 5️⃣ Check if there are any items to insert
     if (processedInventory.length === 0) {
       return res.status(400).json({
-        message: "No valid items to insert. Please check the errors below and add missing suppliers, categories, or pricebooks first.",
+        message: "No valid items to insert. Please check the errors below and add missing suppliers or categories first.",
         skippedCount: skippedSuppliers.length,
         skippedSuppliers,
       });
@@ -306,7 +260,7 @@ export const getInventory = async (req, res) => {
       include: [
         { model: db.Suppliers, as: "supplier" },
         { model: db.PriceBookCategory, as: "categoryDetails" },
-        { model: db.PriceBook, as: "priceBooks" },
+        
       ],
       where: whereConditions,
       offset,

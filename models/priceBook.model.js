@@ -95,10 +95,10 @@ export default (sequelize, DataTypes) => {
 
     PriceBook.associate = (models) => {
  
-        PriceBook.hasMany(models.Inventory, {
-            foreignKey: 'priceBookId',
-            onDelete: 'CASCADE',
-        });
+        // PriceBook.hasMany(models.Inventory, {
+        //     foreignKey: 'priceBookId',
+        //     onDelete: 'CASCADE',
+        // });
         PriceBook.belongsTo(models.Suppliers, {
             foreignKey: 'supplierId',
             onDelete: 'CASCADE',

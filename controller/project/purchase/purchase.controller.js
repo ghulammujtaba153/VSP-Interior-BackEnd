@@ -1,5 +1,7 @@
 import db from "../../../models/index.js";
-const { ProjectPurchase, PurchaseLineItem, ProjectSetup, Suppliers } = db;
+import { Op, fn, col, literal, Sequelize } from "sequelize";
+const { ProjectPurchase, PurchaseLineItem, Suppliers, ProjectSetup, Inventory, Clients } = db;
+
 
 import multer from "multer";
 import path from "path";
@@ -363,3 +365,197 @@ export const deleteProjectPurchase = async (req, res) => {
         });
     }
 }
+
+
+
+export const getPurchaseDashboardStats = async (req, res) => {
+  try {
+    // ---- 1️⃣ Basic Stats ----
+    const totalOrders = await ProjectPurchase.count();
+    const statusCounts = await ProjectPurchase.findAll({
+      attributes: [
+        ["status", "status"],
+        [fn("COUNT", col("ProjectPurchase.id")), "count"]
+      ],
+      group: ["status"],
+      raw: true,
+    });
+
+    // ---- 2️⃣ Financial Stats ----
+    const totalSpendData = await ProjectPurchase.findAll({
+      attributes: [
+        [fn("SUM", col("ProjectPurchase.totalAmount")), "totalSpend"],
+        [fn("AVG", col("ProjectPurchase.totalAmount")), "avgOrderValue"],
+      ],
+      raw: true,
+    });
+    const { totalSpend, avgOrderValue } = totalSpendData[0] || {};
+
+    // ---- 3️⃣ Top 5 Suppliers by Spend ----
+    const topSuppliers = await ProjectPurchase.findAll({
+      attributes: [
+        [col("ProjectPurchase.supplierId"), "supplierId"],
+        [fn("SUM", col("ProjectPurchase.totalAmount")), "totalSpend"],
+        [fn("COUNT", col("ProjectPurchase.id")), "totalOrders"],
+      ],
+      include: [{ model: Suppliers, as: "suppliers", attributes: ["name"], required: false }],
+      group: [col("ProjectPurchase.supplierId"), col("suppliers.id")],
+      order: [[fn("SUM", col("ProjectPurchase.totalAmount")), "DESC"]],
+      limit: 5,
+    });
+
+    // ---- 4️⃣ Project-wise Spend ----
+    const projectSpendRaw = await ProjectPurchase.findAll({
+      attributes: [
+        [col("ProjectPurchase.projectId"), "projectId"],
+        [
+          fn("COALESCE", col("project.projectName"), literal("'General Stock'")),
+          "projectName"
+        ],
+        [fn("SUM", col("ProjectPurchase.totalAmount")), "totalSpent"],
+        [col("project.id"), "projectIdForJoin"],
+      ],
+      include: [
+        {
+          model: ProjectSetup,
+          as: "project",
+          
+          required: false,
+        },
+      ],
+      group: [
+        col("ProjectPurchase.projectId"),
+        col("project.id"),
+        col("project.projectName"),
+      ],
+      order: [[fn("SUM", col("ProjectPurchase.totalAmount")), "DESC"]],
+      raw: true,
+      nest: true,
+    });
+
+    console.log("projectSpendRaw", projectSpendRaw);
+
+    // Get unique project IDs (excluding null)
+    const projectIds = [...new Set(projectSpendRaw.map(item => item.projectIdForJoin).filter(id => id !== null))];
+    
+    // Batch fetch all projects with clients
+    const projectsWithClients = projectIds.length > 0 
+      ? await ProjectSetup.findAll({
+          where: { id: { [Op.in]: projectIds } },
+          include: [
+            {
+              model: Clients,
+              as: "client",
+              required: false,
+            },
+          ],
+        })
+      : [];
+
+      console.log("projectsWithClients", projectsWithClients);
+
+
+    // Create a map for quick lookup
+    const projectMap = new Map();
+    projectsWithClients.forEach(project => {
+      projectMap.set(project.id, {
+        id: project.id,
+        projectName: project.projectName,
+        client: project.client ? {
+          id: project.client.id,
+          companyName: project.client.companyName,
+        } : null,
+      });
+    });
+
+    console.log("projectMap", projectSpendRaw);
+
+    // Enrich with client information
+    const projectSpend = projectSpendRaw.map(item => ({
+      projectId: item.projectId,
+      projectName: item.projectName,
+      totalSpent: item.totalSpent,
+      project: item.projectIdForJoin ? projectMap.get(item.projectIdForJoin) || null : null,
+    }));
+
+    // ---- 5️⃣ Monthly Spend Trend (last 6 months) ----
+    const monthlyTrend = await ProjectPurchase.findAll({
+      attributes: [
+        [fn("DATE_TRUNC", "month", col("ProjectPurchase.createdAt")), "month"],
+        [fn("SUM", col("ProjectPurchase.totalAmount")), "monthlySpend"],
+        [fn("COUNT", col("ProjectPurchase.id")), "ordersCount"],
+      ],
+      group: [fn("DATE_TRUNC", "month", col("ProjectPurchase.createdAt"))],
+      order: [[fn("DATE_TRUNC", "month", col("ProjectPurchase.createdAt")), "ASC"]],
+      limit: 6,
+    });
+
+    // ---- 6️⃣ Inventory / Line Item Stats ----
+    const itemStats = await PurchaseLineItem.findAll({
+      attributes: [
+        [col("PurchaseLineItem.itemId"), "itemId"],
+        [fn("SUM", col("PurchaseLineItem.quantity")), "totalQuantity"],
+        [fn("SUM", col("PurchaseLineItem.subtotal")), "totalSpent"],
+      ],
+      include: [
+        {
+          model: Inventory,
+          as: "item",
+          attributes: ["name", "category"],
+          required: false,
+        },
+      ],
+      group: [col("PurchaseLineItem.itemId"), col("item.id")],
+      order: [[fn("SUM", col("PurchaseLineItem.quantity")), "DESC"]],
+      limit: 5,
+    });
+
+    // ---- 7️⃣ Supplier Performance ----
+    const supplierPerformance = await ProjectPurchase.findAll({
+      attributes: [
+        [col("ProjectPurchase.supplierId"), "supplierId"],
+        [fn("COUNT", col("ProjectPurchase.id")), "totalOrders"],
+        [
+          fn("SUM", literal(`CASE WHEN "ProjectPurchase"."status" = 'delivered' THEN 1 ELSE 0 END`)),
+          "deliveredOrders",
+        ],
+        [
+          fn("SUM", literal(`CASE WHEN "ProjectPurchase"."status" = 'delayed' THEN 1 ELSE 0 END`)),
+          "delayedOrders",
+        ],
+      ],
+      include: [{ model: Suppliers, as: "suppliers", attributes: ["name"], required: false }],
+      group: [col("ProjectPurchase.supplierId"), col("suppliers.id")],
+    });
+
+    // ---- 8️⃣ Attachments Stats ----
+    const attachmentStats = await ProjectPurchase.findAll({
+      attributes: [
+        [fn("COUNT", literal(`CASE WHEN "ProjectPurchase"."attachments" IS NOT NULL THEN 1 END`)), "ordersWithAttachments"],
+        [fn("SUM", literal(`CASE WHEN "ProjectPurchase"."attachments" IS NULL THEN 1 ELSE 0 END`)), "missingAttachments"],
+      ],
+      raw: true,
+    });
+
+    // ✅ FINAL RESPONSE
+    return res.status(200).json({
+      summary: {
+        totalOrders,
+        statusCounts,
+        totalSpend: parseFloat(totalSpend || 0),
+        avgOrderValue: parseFloat(avgOrderValue || 0),
+      },
+      topSuppliers,
+      projectSpend,
+      monthlyTrend,
+      itemStats,
+      supplierPerformance,
+      attachmentStats: attachmentStats[0] || {},
+    });
+
+  } catch (error) {
+    console.error("Error fetching purchase stats:", error);
+    return res.status(500).json({ error: "Failed to fetch purchase stats", details: error.message });
+  }
+};
+ 

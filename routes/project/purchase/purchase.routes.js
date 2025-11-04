@@ -1,5 +1,5 @@
 import express from "express";
-import { createProjectPurchase, deleteProjectPurchase, getAllProjectPurchases, getProjectPurchaseById, updateProjectPurchase } from "../../../controller/project/purchase/purchase.controller.js";
+import { createProjectPurchase, deleteProjectPurchase, getAllProjectPurchases, getProjectPurchaseById, getPurchaseDashboardStats, updateProjectPurchase } from "../../../controller/project/purchase/purchase.controller.js";
 import { upload } from "../../../controller/project/purchase/purchase.controller.js";
 
 
@@ -10,5 +10,6 @@ purchaseRouter.get("/get/:id", getProjectPurchaseById);
 purchaseRouter.get("/get", getAllProjectPurchases);
 purchaseRouter.put("/update/:id", upload.array("files"), updateProjectPurchase);
 purchaseRouter.delete("/delete/:id", deleteProjectPurchase);
+purchaseRouter.get("/stats", getPurchaseDashboardStats);
 
 export default purchaseRouter;

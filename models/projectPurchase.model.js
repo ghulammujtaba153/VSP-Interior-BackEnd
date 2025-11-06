@@ -28,6 +28,10 @@ export default (sequelize, DataTypes) => {
           type: DataTypes.ENUM("submit", "approved", "rejected", "pending", "delivered", "delayed"),
           defaultValue: "submit",
         },
+        deliveryStatus: {
+          type: DataTypes.ENUM("on-time", "early", "late"),
+          allowNull: true,
+        },
         totalAmount: {
           type: DataTypes.FLOAT,
           defaultValue: 0,

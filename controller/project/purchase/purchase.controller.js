@@ -255,6 +255,21 @@ export const updateProjectPurchase = async (req, res) => {
             }, 0);
         }
 
+        // Calculate deliveryStatus when status changes to "delivered"
+        if (purchaseData.status === 'delivered' && purchase.expectedDelivery) {
+            const expectedDate = new Date(purchase.expectedDelivery);
+            const actualDate = new Date(); // Current date when status is set to delivered
+            
+            if (actualDate < expectedDate) {
+                purchaseData.deliveryStatus = 'early';
+            } else if (actualDate <= new Date(expectedDate.getTime() + 24 * 60 * 60 * 1000)) {
+                // Allow 1 day buffer for "on-time"
+                purchaseData.deliveryStatus = 'on-time';
+            } else {
+                purchaseData.deliveryStatus = 'late';
+            }
+        }
+
         // Handle attachments - check if existingAttachments is provided in FormData
         let existingAttachmentsArray = purchase.attachments || [];
         if (req.body.existingAttachments) {

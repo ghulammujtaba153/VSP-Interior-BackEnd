@@ -1,6 +1,6 @@
 import db from '../../models/index.js';
-import { Sequelize, Op } from "sequelize";
-const {Inventory, Audit, Suppliers, PriceBookCategory, PriceBook} = db;
+import { Sequelize, Op, fn, col } from "sequelize";
+const {Inventory, Audit, Suppliers, PriceBookCategory, PriceBook, PurchaseLineItem} = db;
 
 export const createInventory = async (req, res) => {
     try {
@@ -325,3 +325,143 @@ export const deleteInventory = async (req, res) => {
         });
     }
 }
+
+
+export const getInventoryPerformanceReport = async (req, res) => {
+  const { startDate, endDate } = req.query;
+  try {
+    // Build date filter for purchase line items if provided
+    const dateFilter = {};
+    if (startDate || endDate) {
+      dateFilter.createdAt = {};
+      if (startDate) dateFilter.createdAt[Op.gte] = new Date(startDate);
+      if (endDate) dateFilter.createdAt[Op.lte] = new Date(endDate);
+    }
+
+    // ==================== 1. GET ALL INVENTORY ITEMS ====================
+    const allInventory = await Inventory.findAll({
+      attributes: ['id', 'name', 'costPrice', 'quantity', 'status'],
+    });
+
+    const totalItems = allInventory.length;
+    
+    // ==================== 2. CALCULATE TOTAL PRICE AND AVERAGE PRICE ====================
+    let totalPrice = 0;
+    let totalQuantity = 0;
+    
+    allInventory.forEach(item => {
+      const costPrice = parseFloat(item.costPrice || 0);
+      const quantity = parseInt(item.quantity || 0);
+      totalPrice += costPrice * quantity;
+      totalQuantity += quantity;
+    });
+
+    const averagePrice = totalItems > 0 ? (totalPrice / totalQuantity) : 0;
+
+    // ==================== 3. GET ITEMS USED IN PROJECTS (PurchaseLineItem) ====================
+    const lineItems = await PurchaseLineItem.findAll({
+      where: dateFilter,
+      attributes: [
+        'itemId',
+        [fn('SUM', col('quantity')), 'totalQuantityUsed'],
+        [fn('SUM', col('subtotal')), 'totalValueUsed'],
+        [fn('COUNT', col('id')), 'usageCount'],
+      ],
+      group: ['itemId'],
+      raw: true,
+    });
+
+    const usedItemIds = new Set(lineItems.map(item => item.itemId));
+    const itemsUsedInProjects = allInventory.filter(item => usedItemIds.has(item.id)).length;
+    const itemsNotUsed = totalItems - itemsUsedInProjects;
+
+    // ==================== 4. CREATE MAP OF ITEM USAGE ====================
+    const itemUsageMap = new Map();
+    lineItems.forEach(item => {
+      itemUsageMap.set(item.itemId, {
+        totalQuantityUsed: parseFloat(item.totalQuantityUsed || 0),
+        totalValueUsed: parseFloat(item.totalValueUsed || 0),
+        usageCount: parseInt(item.usageCount || 0),
+      });
+    });
+
+    // ==================== 5. TOP ITEMS USED ====================
+    const topItemsUsed = lineItems
+      .map(item => {
+        const inventoryItem = allInventory.find(inv => inv.id === item.itemId);
+        if (!inventoryItem) return null;
+
+        const usage = itemUsageMap.get(item.itemId);
+        const costPrice = parseFloat(inventoryItem.costPrice || 0);
+        const estimatedPriceGenerated = usage.totalValueUsed; // From PurchaseLineItem subtotal
+
+        return {
+          id: inventoryItem.id,
+          name: inventoryItem.name,
+          totalQuantityUsed: Math.round(usage.totalQuantityUsed),
+          totalValueUsed: parseFloat(usage.totalValueUsed.toFixed(2)),
+          usageCount: usage.usageCount,
+          costPrice: parseFloat(costPrice.toFixed(2)),
+          estimatedPriceGenerated: parseFloat(estimatedPriceGenerated.toFixed(2)),
+        };
+      })
+      .filter(item => item !== null)
+      .sort((a, b) => b.totalQuantityUsed - a.totalQuantityUsed)
+      .slice(0, 10); // Top 10 items
+
+    // ==================== 6. ITEMS BY STATUS ====================
+    const statusCounts = {
+      'In Stock': 0,
+      'Low Stock': 0,
+      'Out of Stock': 0,
+    };
+
+    const statusDetails = {
+      'In Stock': [],
+      'Low Stock': [],
+      'Out of Stock': [],
+    };
+
+    allInventory.forEach(item => {
+      const status = item.status || 'In Stock';
+      statusCounts[status] = (statusCounts[status] || 0) + 1;
+      
+      const itemData = {
+        id: item.id,
+        name: item.name,
+        quantity: parseInt(item.quantity || 0),
+        costPrice: parseFloat(item.costPrice || 0),
+        totalValue: parseFloat((item.costPrice || 0) * (item.quantity || 0)).toFixed(2),
+      };
+
+      if (!statusDetails[status]) {
+        statusDetails[status] = [];
+      }
+      statusDetails[status].push(itemData);
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalItems,
+        totalPrice: parseFloat(totalPrice.toFixed(2)),
+        averagePrice: parseFloat(averagePrice.toFixed(2)),
+        itemsUsedInProjects,
+        itemsNotUsed,
+        topItemsUsed,
+        statusBreakdown: {
+          counts: statusCounts,
+          details: statusDetails,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching inventory performance report:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch inventory performance report',
+      error: error.message,
+    });
+  }
+};
+

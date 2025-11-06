@@ -53,9 +53,25 @@ export default (sequelize, DataTypes) => {
     },
     qsPhone: { type: DataTypes.STRING },
     revision: { type: DataTypes.INTEGER, defaultValue: 0 },
+    labourCost: {
+      type: DataTypes.FLOAT,
+      defaultValue: 0,
+    },
+    totalCost: {
+      type: DataTypes.FLOAT,
+      defaultValue: 0,
+    },
+    totalSell: {
+      type: DataTypes.FLOAT,
+      defaultValue: 0,
+    },
+    totalProfit: {
+      type: DataTypes.FLOAT,
+      defaultValue: 0,
+    },
     status: {
-      type: DataTypes.STRING,
-      defaultValue: 'draft'
+      type: DataTypes.STRING, // draft, pending, approved, rejected, revised, completed, cancelled
+      defaultValue: 'draft',
     }
   }, {
     tableName: 'project_setups',

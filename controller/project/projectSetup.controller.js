@@ -15,7 +15,10 @@ const {
   Worker,
   ProjectPurchase,
   PurchaseLineItem,
-  Inventory
+  Inventory,
+  User,
+  EmployeeTimeSheet,
+  EmployeeLeave
 } = db;
 
 // Helper function to convert empty strings to null for integer fields
@@ -595,6 +598,7 @@ export const getSalesStats = async (req, res) => {
       attributes: [
         [col('status'), 'status'],
         [fn('COUNT', col('id')), 'count'],
+        [fn('SUM', col('totalCost')), 'totalCost'], // SELL + GST
       ],
       group: ['status'],
       raw: true,
@@ -603,6 +607,7 @@ export const getSalesStats = async (req, res) => {
     const statusCounts = statusStats.map(stat => ({
       status: stat.status || 'draft',
       count: parseInt(stat.count || 0),
+      totalCost: parseFloat(stat.totalCost || 0), // SELL + GST
     }));
 
     // ==================== 4. RECENT ACTIVITY (Last 10 projects) ====================
@@ -1150,6 +1155,52 @@ export const getJobPerformanceStats = async (req, res) => {
   }
 };
 
+export const getAllProjectsBasicStats = async (req, res) => {
+  try {
+    const projects = await ProjectSetup.findAll({
+      include: [
+        {
+          model: Clients,
+          as: 'client',
+          attributes: ['id', 'companyName', 'emailAddress', 'phoneNumber'],
+          required: false,
+        },
+      ],
+      attributes: ['id', 'projectName', 'description', 'status', 'totalCost', 'totalSell', 'totalProfit', 'createdAt'],
+      order: [['createdAt', 'DESC']],
+    });
+
+    const projectsList = projects.map(project => ({
+      id: project.id,
+      name: project.projectName,
+      description: project.description || '',
+      status: project.status,
+      client: project.client ? {
+        id: project.client.id,
+        name: project.client.companyName,
+        email: project.client.emailAddress,
+        phone: project.client.phoneNumber,
+      } : null,
+      totalCost: parseFloat(project.totalCost || 0),
+      totalSell: parseFloat(project.totalSell || 0),
+      totalProfit: parseFloat(project.totalProfit || 0),
+      createdAt: project.createdAt,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: projectsList,
+    });
+  } catch (error) {
+    console.error('Error fetching projects basic stats:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch projects basic stats',
+      error: error.message,
+    });
+  }
+};
+
 export const getProjectSetupStats = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1467,6 +1518,101 @@ export const getProjectSetupStats = async (req, res) => {
       ratesByType[rate.type].totalProfit += (parseFloat(rate.sell || 0) - parseFloat(rate.cost || 0));
     });
 
+    // ==================== 13. WORKER PERFORMANCE (LEAVES & TIMESHEETS) ====================
+    const workerEmails = [...new Set(workersDetails.map(w => w.workerEmail).filter(Boolean))];
+    const matchingUsers = workerEmails.length > 0 ? await User.findAll({
+      where: { email: { [Op.in]: workerEmails } },
+      attributes: ['id', 'email', 'name'],
+    }) : [];
+
+    const emailToUserIdMap = new Map();
+    matchingUsers.forEach(user => {
+      emailToUserIdMap.set(user.email, user.id);
+    });
+
+    const userIds = Array.from(emailToUserIdMap.values());
+    const workerPerformance = workersDetails.map(worker => {
+      const userId = emailToUserIdMap.get(worker.workerEmail);
+      return {
+        ...worker,
+        userId: userId || null,
+      };
+    });
+
+    // Get leaves and timesheets for workers
+    const workerLeaves = userIds.length > 0 ? await EmployeeLeave.findAll({
+      where: {
+        employeeId: { [Op.in]: userIds },
+        status: 'approved',
+      },
+      attributes: ['id', 'employeeId', 'leaveType', 'startDate', 'endDate', 'status'],
+    }) : [];
+
+    const workerTimeSheets = userIds.length > 0 ? await EmployeeTimeSheet.findAll({
+      where: {
+        employeeId: { [Op.in]: userIds },
+        status: 'approved',
+      },
+      attributes: ['id', 'employeeId', 'date', 'overWork', 'startTime', 'endTime'],
+    }) : [];
+
+    // Add leaves and timesheet data to worker performance
+    const workerPerformanceWithData = workerPerformance.map(worker => {
+      if (!worker.userId) {
+        return {
+          ...worker,
+          leaves: [],
+          totalLeaves: 0,
+          timesheets: [],
+          totalOvertimeHours: 0,
+        };
+      }
+
+      const leaves = workerLeaves.filter(leave => leave.employeeId === worker.userId);
+      const timesheets = workerTimeSheets.filter(ts => ts.employeeId === worker.userId);
+      
+      // Calculate total overtime hours
+      const timeToHours = (timeString) => {
+        if (!timeString) return 0;
+        const parts = timeString.split(':');
+        if (parts.length < 2) return 0;
+        const hours = parseInt(parts[0]) || 0;
+        const minutes = parseInt(parts[1]) || 0;
+        return hours + (minutes / 60);
+      };
+
+      const totalOvertimeHours = timesheets.reduce((sum, ts) => {
+        return sum + timeToHours(ts.overWork);
+      }, 0);
+
+      return {
+        ...worker,
+        leaves: leaves.map(l => ({
+          id: l.id,
+          leaveType: l.leaveType,
+          startDate: l.startDate,
+          endDate: l.endDate,
+        })),
+        totalLeaves: leaves.length,
+        timesheets: timesheets.map(ts => ({
+          id: ts.id,
+          date: ts.date,
+          overWork: ts.overWork,
+        })),
+        totalOvertimeHours: parseFloat(totalOvertimeHours.toFixed(2)),
+      };
+    });
+
+    // ==================== 14. PURCHASING ITEMS ====================
+    const purchasingItems = purchases.map(purchase => ({
+      id: purchase.id,
+      supplierName: purchase.suppliers?.name || 'Unknown',
+      totalAmount: parseFloat(purchase.totalAmount || 0),
+      status: purchase.status,
+      expectedDelivery: purchase.expectedDelivery,
+      deliveryStatus: purchase.deliveryStatus,
+    }));
+
     return res.status(200).json({
       success: true,
       data: {
@@ -1527,6 +1673,8 @@ export const getProjectSetupStats = async (req, res) => {
         })),
         materialsBySupplier: Object.values(materialsBySupplier),
         supplierPerformance: supplierPerformance,
+        purchasingItems: purchasingItems,
+        workerPerformance: workerPerformanceWithData,
         financialSummary: {
           ratesTotalCost: ratesTotalCost,
           ratesTotalSell: ratesTotalSell,

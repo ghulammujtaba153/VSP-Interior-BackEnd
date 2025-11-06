@@ -1,5 +1,5 @@
 import express from 'express';
-import { createProjectSetup, deleteProjectSetup, getAllProjectSetups, getProjectAmend, getProjectSetupById, getSalesStats, getProjectSetupStats, updateProjectSetup, updateStatus, getFinancialReport, getJobPerformanceStats } from '../../controller/project/projectSetup.controller.js';
+import { createProjectSetup, deleteProjectSetup, getAllProjectSetups, getProjectAmend, getProjectSetupById, getSalesStats, getProjectSetupStats, updateProjectSetup, updateStatus, getFinancialReport, getJobPerformanceStats, getAllProjectsBasicStats } from '../../controller/project/projectSetup.controller.js';
 
 
 const projectSetupRouter = express.Router();
@@ -16,6 +16,7 @@ projectSetupRouter.put('/update/status/:id', updateStatus);
 projectSetupRouter.get('/get/sales/stats', getSalesStats);
 projectSetupRouter.get('/get/financial/report', getFinancialReport);
 projectSetupRouter.get('/get/job/performance/stats', getJobPerformanceStats);
+projectSetupRouter.get('/get/all/basic/stats', getAllProjectsBasicStats);
 projectSetupRouter.get('/get/stats/:id', getProjectSetupStats);
 
 export default projectSetupRouter;

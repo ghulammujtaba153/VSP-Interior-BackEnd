@@ -28,12 +28,12 @@ export default (sequelize, DataTypes) => {
 
   // 🔹 Associations
   InventoryAllocation.associate = (models) => {
-    InventoryAllocation.belongsTo(models.Project, {
-      foreignKey: "projectId",
-      as: "project",
-      onDelete: "CASCADE",
-      onUpdate: "CASCADE",
-    });
+    // InventoryAllocation.belongsTo(models.Project, {
+    //   foreignKey: "projectId",
+    //   as: "project",
+    //   onDelete: "CASCADE",
+    //   onUpdate: "CASCADE",
+    // });
 
     InventoryAllocation.belongsTo(models.Inventory, {
       foreignKey: "materialId",

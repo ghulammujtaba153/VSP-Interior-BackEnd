@@ -40,7 +40,7 @@ export default (sequelize, DataTypes) => {
   );
 
   ProjectWorker.associate = (models) => {
-    ProjectWorker.belongsTo(models.Project, { foreignKey: "projectId" });
+    // ProjectWorker.belongsTo(models.Project, { foreignKey: "projectId" });
     ProjectWorker.belongsTo(models.Worker, { foreignKey: "workerId" });
   };
 

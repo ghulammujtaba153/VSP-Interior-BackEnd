@@ -73,11 +73,11 @@ export default (sequelize, DataTypes) => {
       onDelete: 'CASCADE'
     });
 
-    ProjectSetupJob.hasMany(models.ProjectGanttChart, {
-      foreignKey: "projectSetupJobId",
-      as: "ganttChart",
-      onDelete: 'CASCADE'
-    });
+    // ProjectSetupJob.hasMany(models.ProjectGanttChart, {
+    //   foreignKey: "projectSetupJobId",
+    //   as: "ganttChart",
+    //   onDelete: 'CASCADE'
+    // });
   };
 
   return ProjectSetupJob;

@@ -85,11 +85,11 @@ export default (sequelize, DataTypes) => {
         onDelete: 'CASCADE'
       });
 
-      Client.hasMany(models.Project, {
-      foreignKey: "clientId", // <-- make sure Project has clientId
-      as: "projects",
-      onDelete: "SET NULL",
-    });
+    //   Client.hasMany(models.Project, {
+    //   foreignKey: "clientId", // <-- make sure Project has clientId
+    //   as: "projects",
+    //   onDelete: "SET NULL",
+    // });
     };
 
 

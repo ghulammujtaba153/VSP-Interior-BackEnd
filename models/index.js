@@ -21,10 +21,10 @@ import CabinetMaterialModel from './cabinetMaterial.model.js';
 import PriceBookCategoryModel from './priceBookCategory.model.js';
 import PriceBookModel from './priceBook.model.js';
 import WorkerModel from './worker.model.js';
-import projectModel from './project.model.js';
+// import projectModel from './project.model.js';
 import inventoryAllocationModel from './inventoryAllocation.js';
 import projectWorkerModel from './projectWorker.model.js';
-import projectManangementModel from './projectManangement.model.js';
+// import projectManangementModel from './projectManangement.model.js';
 import employeeLeave from './employeeLeave.js';
 import projectSetupModel from './projectSetup.model.js';
 import projectRateModel from './projectRate.model.js';
@@ -39,7 +39,7 @@ import employeeDocumentsModel from './employeeDocuments.model.js';
 import ProjectSetupJobWorkerModel  from './projectSetupJobWorker.model.js';;
 import ProjectSetupJobModel from './projectSetupJob.model.js';
 import ProjectKanbanModel from './projectKanban.model.js';
-import ProjectGanttChartModel from './projectGanttChart.model.js';
+// import ProjectGanttChartModel from './projectGanttChart.model.js';
 import NotesModel from './notes.model.js';
 import ProjectPurchaseModel from './projectPurchase.model.js';
 import PurchaseLineItemModel from './purchaseLineItem.model.js';
@@ -79,10 +79,10 @@ const CabinetMaterial = CabinetMaterialModel(sequelize, Sequelize.DataTypes)
 const PriceBookCategory = PriceBookCategoryModel(sequelize, Sequelize.DataTypes)
 const PriceBook = PriceBookModel(sequelize, Sequelize.DataTypes)
 const Worker = WorkerModel(sequelize, Sequelize.DataTypes)
-const Project = projectModel(sequelize, Sequelize.DataTypes);
+// const Project = projectModel(sequelize, Sequelize.DataTypes);
 const InventoryAllocation = inventoryAllocationModel(sequelize, Sequelize.DataTypes);
 const ProjectWorker = projectWorkerModel(sequelize, Sequelize.DataTypes);
-const ProjectManagement = projectManangementModel(sequelize, Sequelize.DataTypes);
+// const ProjectManagement = projectManangementModel(sequelize, Sequelize.DataTypes);
 const EmployeeLeave = employeeLeave(sequelize, Sequelize.DataTypes);
 const ProjectSetup = projectSetupModel(sequelize, Sequelize.DataTypes);
 const ProjectRate = projectRateModel(sequelize, Sequelize.DataTypes);
@@ -97,7 +97,7 @@ const EmployeeDocuments = employeeDocumentsModel(sequelize, Sequelize.DataTypes)
 const ProjectSetupJob = ProjectSetupJobModel(sequelize, Sequelize.DataTypes);
 const ProjectSetupJobWorker = ProjectSetupJobWorkerModel (sequelize, Sequelize.DataTypes);
 const ProjectKanban = ProjectKanbanModel(sequelize, Sequelize.DataTypes);
-const ProjectGanttChart = ProjectGanttChartModel(sequelize, Sequelize.DataTypes);
+// const ProjectGanttChart = ProjectGanttChartModel(sequelize, Sequelize.DataTypes);
 const Notes = NotesModel(sequelize, Sequelize.DataTypes);
 const ProjectPurchase = ProjectPurchaseModel(sequelize, Sequelize.DataTypes);
 const PurchaseLineItem = PurchaseLineItemModel(sequelize, Sequelize.DataTypes);
@@ -123,10 +123,10 @@ const db = {
   PriceBookCategory,
   PriceBook,
   Worker,
-  Project,
+  // Project,
   InventoryAllocation,
   ProjectWorker,
-  ProjectManagement,
+  // ProjectManagement,
   EmployeeLeave,
   ProjectSetup,
   ProjectRate,
@@ -141,7 +141,7 @@ const db = {
   ProjectSetupJob,
   ProjectSetupJobWorker,
   ProjectKanban,
-  ProjectGanttChart,
+  // ProjectGanttChart,
   Notes,
   ProjectPurchase,
   PurchaseLineItem,

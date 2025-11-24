@@ -6,7 +6,9 @@ export default (sequelize, DataTypes) => {
       autoIncrement: true,
       primaryKey: true,
     },
-    projectName: { type: DataTypes.STRING, allowNull: false,
+    projectName: {
+      type: DataTypes.STRING,
+      allowNull: false,
       set(value) {
         if (typeof value === 'string' && value.length > 0) {
           const formatted =
@@ -17,7 +19,9 @@ export default (sequelize, DataTypes) => {
         }
       },
     },
-    siteLocation: { type: DataTypes.STRING, allowNull: false,
+    siteLocation: {
+      type: DataTypes.STRING,
+      allowNull: false,
       set(value) {
         if (typeof value === 'string' && value.length > 0) {
           const formatted =
@@ -28,7 +32,8 @@ export default (sequelize, DataTypes) => {
         }
       },
     },
-    accessNotes: { type: DataTypes.TEXT,
+    accessNotes: {
+      type: DataTypes.TEXT,
       set(value) {
         if (typeof value === 'string' && value.length > 0) {
           const formatted =
@@ -40,19 +45,19 @@ export default (sequelize, DataTypes) => {
       },
     },
     clientId: { type: DataTypes.INTEGER, allowNull: false },
-    qsName: { type: DataTypes.STRING,
-      set(value) {
-        if (typeof value === 'string' && value.length > 0) {
-          const formatted =
-            value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-          this.setDataValue('qsName', formatted);
-        } else {
-          this.setDataValue('qsName', value);
-        }
-      },
-    },
-    qsPhone: { type: DataTypes.STRING },
+
+    quoteNumber: { type: DataTypes.STRING, unique: true, allowNull: true },
+    quoteRevision: { type: DataTypes.STRING, allowNull: true },
+    estimator: { type: DataTypes.STRING, allowNull: true },
+    tenderScore: { type: DataTypes.FLOAT, defaultValue: 0 },
+
+    // store date as DATEONLY (YYYY-MM-DD)
+    projectDate: { type: DataTypes.DATEONLY, allowNull: true },
+
+    projectNumber: { type: DataTypes.STRING, unique: true, allowNull: true },
+
     revision: { type: DataTypes.INTEGER, defaultValue: 0 },
+
     labourCost: {
       type: DataTypes.FLOAT,
       defaultValue: 0,
@@ -69,8 +74,10 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.FLOAT,
       defaultValue: 0,
     },
+
+    // single status field
     status: {
-      type: DataTypes.STRING, // draft, pending, approved, rejected, revised, completed, cancelled
+      type: DataTypes.STRING,
       defaultValue: 'draft',
     }
   }, {

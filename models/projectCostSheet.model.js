@@ -27,7 +27,7 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
-      qunatity: {
+      quantity: {
         type: DataTypes.STRING,
         allowNull: true,
       },
@@ -98,19 +98,19 @@ export default (sequelize, DataTypes) => {
         defaultValue: {
           extraFreight: {
             description: "",
-            extraQunatity: "",
+            extraQuantity: "",
             height: "",
             length: "",
             depth: "",
             measures: "",
-            qunatity: "",
+            quantity: "",
             rate: "",
             subTotal: "",
             notes: ""
           },
           draftingHours: {
             measures: "",
-            qunatity: "",
+            quantity: "",
             rate: "",
             subTotal: "",
             notes: ""
@@ -123,21 +123,21 @@ export default (sequelize, DataTypes) => {
         defaultValue: {
           extraHourMachining: {
             measures: "",
-            qunatity: "",
+            quantity: "",
             rate: "",
             subTotal: "",
             notes: ""
           },
           extraHourAssembly: {
             measures: "",
-            qunatity: "",
+            quantity: "",
             rate: "",
             subTotal: "",
             notes: ""
           },
           extraHourSite: {
             measures: "",
-            qunatity: "",
+            quantity: "",
             rate: "",
             subTotal: "",
             notes: ""

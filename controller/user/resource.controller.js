@@ -16,7 +16,7 @@ export const createResource = async (req, res) => {
 
 export const getResources = async (req, res) => {
     try {
-        const resources = await Resource.findAll();
+        const resources = await Resource.findAll({ order: [['createdAt', 'DESC']] });
         res.status(200).json(resources);
     } catch (error) {
         res.status(500).json({ error: error.message });

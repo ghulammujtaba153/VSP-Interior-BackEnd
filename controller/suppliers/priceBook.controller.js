@@ -268,10 +268,53 @@ export const getPriceBookHistory = async (req, res) => {
 
 export const deletePriceBook = async (req, res) => {
     try {
-        const priceBook = await PriceBook.destroy({
-            where: { id: req.params.id }
+        const itemId = req.params.id;
+
+        // Get the item being deleted
+        const itemToDelete = await PriceBook.findByPk(itemId);
+        if (!itemToDelete) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+
+        const { name, priceBookCategoryId, version } = itemToDelete;
+
+        // Find all other versions of this item (same name, category, different version)
+        const allVersions = await PriceBook.findAll({
+            where: {
+                name,
+                priceBookCategoryId,
+                id: { [Op.ne]: itemId } // Exclude current item
+            },
+            attributes: ['id', 'version', 'status'],
+            order: [['version', 'DESC']]
         });
-        res.status(200).json(priceBook);
+
+        // Find the previous version (highest version before the deleted one)
+        if (allVersions.length > 0) {
+            // Get the version number of the item being deleted
+            const deletedVersionNum = parseInt(version.replace('v', '')) || 0;
+            
+            // Find previous version (highest version number less than deleted)
+            const previousVersion = allVersions.find(v => {
+                const vNum = parseInt(v.version.replace('v', '')) || 0;
+                return vNum < deletedVersionNum;
+            });
+
+            // If previous version exists, set it to active
+            if (previousVersion) {
+                await PriceBook.update(
+                    { status: 'active', versionEndDate: null },
+                    { where: { id: previousVersion.id } }
+                );
+            }
+        }
+
+        // Delete the current item
+        await PriceBook.destroy({
+            where: { id: itemId }
+        });
+
+        res.status(200).json({ message: 'Item deleted successfully and previous version activated' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

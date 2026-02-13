@@ -34,6 +34,8 @@ import purchaseRouter from "./project/purchase/purchase.routes.js";
 
 const router = express.Router();
 
+
+
 router.use('/role', roleRouter);
 router.use('/permission', permissionRouter);
 router.use('/user', userRouter);

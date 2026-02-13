@@ -1,4 +1,4 @@
-name: Deploy VPS Interior Backend
+name: Deploy VSP Interior Backend
 
 on:
   push:
@@ -21,89 +21,97 @@ jobs:
 
       - name: Deploy to EC2 via SSH
         run: |
-          # Extract branch name before SSH
-          BRANCH_NAME="${{ github.ref_name }}"
-          echo "Deploying branch: $BRANCH_NAME"
-          
+          echo "Deploying branch: ${{ github.ref_name }}"
+
           ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << EOF
             set -e
 
-            # Use the SAME directory for both branches
-            PROJECT_DIR="VPS-Interior-BackEnd"
-            
-            # Branch-specific variables
-            if [ "$BRANCH_NAME" = "main" ]; then
-              CONTAINER_NAME="vps-backend-prod"
-              IMAGE_NAME="vps-backend-prod"
+            BRANCH_NAME="${{ github.ref_name }}"
+
+            # ==============================
+            # Branch Configuration
+            # ==============================
+            if [ "\$BRANCH_NAME" = "main" ]; then
+              PROJECT_DIR="vsp-backend-prod"
+              CONTAINER_NAME="vsp-backend-prod"
+              IMAGE_NAME="vsp-backend-prod"
               PORT="5000"
-              ENV_FILE=".env"
+              ENV_FILE=".env.prod"
               REPO_BRANCH="main"
-            elif [ "$BRANCH_NAME" = "dev" ]; then
-              CONTAINER_NAME="vps-backend-dev"
-              IMAGE_NAME="vps-backend-dev"
+
+            elif [ "\$BRANCH_NAME" = "dev" ]; then
+              PROJECT_DIR="vsp-backend-dev"
+              CONTAINER_NAME="vsp-backend-dev"
+              IMAGE_NAME="vsp-backend-dev"
               PORT="5001"
               ENV_FILE=".env.dev"
               REPO_BRANCH="dev"
+
             else
-              echo "Branch '$BRANCH_NAME' not configured for deployment"
+              echo "Branch not configured for deployment"
               exit 1
             fi
 
-            echo "Using container: \$CONTAINER_NAME"
-            echo "Using port: \$PORT"
-            echo "Project directory: \$PROJECT_DIR"
-            echo "Environment file: \$ENV_FILE"
-            echo "Git branch: \$REPO_BRANCH"
+            echo "Using directory: \$PROJECT_DIR"
+            echo "Container: \$CONTAINER_NAME"
+            echo "Port: \$PORT"
 
-            # Clone repo if it doesn't exist
+            # ==============================
+            # Create directory if not exists
+            # ==============================
             if [ ! -d "\$PROJECT_DIR" ]; then
-              git clone https://github.com/ghulammujtaba153/VPS-Interior-BackEnd.git \$PROJECT_DIR
+              git clone -b \$REPO_BRANCH https://github.com/ghulammujtaba153/VSP-Interior-BackEnd \$PROJECT_DIR
             fi
 
             cd \$PROJECT_DIR
 
-            # Pull latest code for the specific branch
+            # ==============================
+            # Pull latest code
+            # ==============================
             git fetch origin
             git checkout \$REPO_BRANCH
             git reset --hard origin/\$REPO_BRANCH
 
-            # Check if environment file exists
-            echo "Checking for environment file in: \$(pwd)"
+            # ==============================
+            # Check env file
+            # ==============================
             if [ ! -f "\$ENV_FILE" ]; then
-              echo "Error: Environment file \$ENV_FILE not found in project directory!"
-              echo "Available files in current directory:"
-              ls -la
+              echo "Missing env file: \$ENV_FILE"
               exit 1
-            else
-              echo "Found environment file: \$ENV_FILE"
             fi
 
-            # Stop and remove any container using the same port
-            docker ps --filter "publish=\$PORT" -q | xargs -r docker rm -f
-
-            # Remove old container by name if still present
+            # ==============================
+            # Stop and remove old container
+            # ==============================
             docker rm -f \$CONTAINER_NAME 2>/dev/null || true
 
-            # Remove old image to avoid buildup
+            # ==============================
+            # Remove old image
+            # ==============================
             docker rmi \$IMAGE_NAME 2>/dev/null || true
 
-            # Build Docker image
+            # ==============================
+            # Build new image
+            # ==============================
             docker build -t \$IMAGE_NAME .
 
-            # Run Docker container with branch-specific .env
-            docker run -d \\
-              --name \$CONTAINER_NAME \\
-              --env-file "\$(pwd)/\$ENV_FILE" \\
-              -p \$PORT:\$PORT \\
+            # ==============================
+            # Run container
+            # App ALWAYS runs internally on 5000
+            # ==============================
+            docker run -d \
+              --name \$CONTAINER_NAME \
+              --env-file "\$(pwd)/\$ENV_FILE" \
+              -p \$PORT:5000 \
+              --restart always \
               \$IMAGE_NAME
 
-            # Clean up unused images
+            # ==============================
+            # Cleanup unused images
+            # ==============================
             docker image prune -f
 
-            echo "Deployment of \$BRANCH_NAME branch completed successfully!"
-            echo "Container \$CONTAINER_NAME is running on port \$PORT"
-            
-            # Wait a moment and check if container is running
-            sleep 5
+            echo "Deployment successful!"
             docker ps --filter "name=\$CONTAINER_NAME"
+
           EOF

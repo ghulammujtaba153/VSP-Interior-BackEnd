@@ -27,6 +27,7 @@ app.use(
       "https://vps-interior-front-end-ten.vercel.app",
       "https://dev.myvsp.co.nz",
       "https://myvsp.co.nz",
+      "https://www.myvsp.co.nz",
     ],
     credentials: true,
   })

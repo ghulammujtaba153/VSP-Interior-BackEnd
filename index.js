@@ -25,6 +25,8 @@ app.use(
       "http://localhost:3000",
       "https://demo-vps-interior-front-end-ten.vercel.app",
       "https://vps-interior-front-end-ten.vercel.app",
+      "https://dev.myvsp.co.nz",
+      "https://myvsp.co.nz",
     ],
     credentials: true,
   })

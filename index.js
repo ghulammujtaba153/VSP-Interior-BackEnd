@@ -40,7 +40,6 @@ app.use("/uploads", express.static("uploads"));
 
 
 
-
 // Routes
 app.use('/api', router);
 

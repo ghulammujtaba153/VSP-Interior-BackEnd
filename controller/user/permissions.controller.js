@@ -4,7 +4,6 @@ const { Permission, Resource, Role } = db;
 
 export const createPermission = async (req, res) => {
     try {
-        
         const permission = await Permission.create(req.body);
         res.status(201).json(permission);
     } catch (error) {

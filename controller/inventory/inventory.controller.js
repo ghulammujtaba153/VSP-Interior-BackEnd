@@ -215,7 +215,7 @@ export const importCSV = async (req, res) => {
 
 
 export const getInventory = async (req, res) => {
-  const { page = 1, limit = 10, search = "", supplierId, categoryId, priceBookId, status } = req.query;
+  const { page = 1, limit = 10, search = "", supplierId, categoryId, priceBookId, status, sortBy = 'createdAt', order = 'DESC' } = req.query;
   const offset = (page - 1) * limit;
   const whereConditions = {};
 
@@ -263,9 +263,9 @@ export const getInventory = async (req, res) => {
         
       ],
       where: whereConditions,
-      offset,
+      offset: parseInt(offset),
       limit: parseInt(limit, 10),
-      order: [["createdAt", "DESC"]],
+      order: [[sortBy, order.toUpperCase()]],
     });
 
     res.status(200).json({

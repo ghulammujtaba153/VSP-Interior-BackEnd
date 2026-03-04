@@ -16,7 +16,7 @@ export const createCabinetCategory = async (req, res) => {
 
 
 export const getCabinetCategories = async (req, res) => {
-    const { page = 1, limit = 10, search = '' } = req.query;
+    const { page = 1, limit = 10, search = '', sortBy = 'createdAt', order = 'DESC' } = req.query;
     const offset = (page - 1) * limit;
 
     const whereConditions = {};
@@ -32,9 +32,10 @@ export const getCabinetCategories = async (req, res) => {
                 model: CabinetSubCategories,
                 as: 'subCategories',
             }],
-            offset,
-            limit,
+            offset: parseInt(offset),
+            limit: parseInt(limit),
             where: whereConditions,
+            order: [[sortBy, order.toUpperCase()]],
             distinct: true // <-- Fixes inflated count
         });
         res.status(200).json({ cabinetCategories, total: count });

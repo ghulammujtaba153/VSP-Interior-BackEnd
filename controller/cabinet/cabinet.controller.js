@@ -127,7 +127,7 @@ export const insertCabinet = async (req, res) => {
 
 
 export const getCabinet = async (req, res) => {
-  const { page = 1, limit = 10, search = "", subCode = "" } = req.query;
+  const { page = 1, limit = 10, search = "", subCode = "", sortBy = 'createdAt', order = 'DESC' } = req.query;
   const offset = (page - 1) * limit;
   const whereConditions = {};
   const { id } = req.params;
@@ -158,8 +158,8 @@ if (subCodeStr.trim() !== "") {
   try {
     const { count, rows: cabinets } = await Cabinet.findAndCountAll({
       where: whereConditions,
-      offset,
-      limit,
+      offset: parseInt(offset),
+      limit: parseInt(limit),
       include: [
         {
           model: CabinetCategories,
@@ -170,6 +170,7 @@ if (subCodeStr.trim() !== "") {
           as: "cabinetSubCategory",
         },
       ],
+      order: [[sortBy, order.toUpperCase()]],
       distinct: true,
     });
 

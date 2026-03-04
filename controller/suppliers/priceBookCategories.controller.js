@@ -28,7 +28,8 @@ export const createPriceBookCategory = async (req, res) => {
 }
 
 export const getPriceBookCategories = async (req, res) => {
-    const { search } = req.query;
+    const { page = 1, limit = 10, search, sortBy = 'createdAt', order = 'DESC' } = req.query;
+    const offset = (page - 1) * limit;
     const whereClause = {};
     
     if (search) {
@@ -37,13 +38,15 @@ export const getPriceBookCategories = async (req, res) => {
         ];
     }
 
-    // Categories are independent - no supplierId filtering
     try {
-        const priceBookCategories = await PriceBookCategory.findAll({ 
+        const { count, rows: priceBookCategories } = await PriceBookCategory.findAndCountAll({ 
             where: whereClause,
-            order: [['id', 'ASC']]
+            offset: parseInt(offset),
+            limit: parseInt(limit),
+            order: [[sortBy, order.toUpperCase()]],
+            distinct: true
         });
-        res.status(200).json(priceBookCategories);
+        res.status(200).json({ priceBookCategories, total: count });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

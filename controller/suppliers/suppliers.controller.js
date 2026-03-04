@@ -95,7 +95,7 @@ export const importCSV = async (req, res) => {
 
 export const getSuppliers = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search = '' } = req.query;
+        const { page = 1, limit = 10, search = '', sortBy = 'createdAt', order = 'DESC' } = req.query;
         const offset = (page - 1) * limit;
 
         // Build search conditions
@@ -120,7 +120,7 @@ export const getSuppliers = async (req, res) => {
             ],
             limit: parseInt(limit),
             offset: parseInt(offset),
-            order: [['createdAt', 'DESC']]
+            order: [[sortBy, order.toUpperCase()]]
         });
 
         res.status(200).json({

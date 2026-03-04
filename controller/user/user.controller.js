@@ -101,11 +101,11 @@ export const getUserById = async (req, res) => {
 }
 
 export const getUsers = async (req, res) => {
-    const { page, limit } = req.query;
+    const { page = 1, limit = 10, sortBy = 'createdAt', order = 'DESC' } = req.query;
     try {
         const offset = (page - 1) * limit;
         
-        const users = await User.findAll({
+        const { count, rows: users } = await User.findAndCountAll({
             include: [
                 {
                     model: Role,
@@ -114,10 +114,11 @@ export const getUsers = async (req, res) => {
             attributes: {
                 exclude: ['password']
             },
-            offset,
-            limit
+            offset: parseInt(offset),
+            limit: parseInt(limit),
+            order: [[sortBy, order.toUpperCase()]]
         });
-        res.status(200).json(users);
+        res.status(200).json({ users, total: count });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

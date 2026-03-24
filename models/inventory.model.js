@@ -22,10 +22,15 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      category: {
+      categoryId: {
         type: DataTypes.INTEGER,
         allowNull: true,
-        references: { model: "PriceBookCategory", key: "id" },
+        references: { model: "inventory_categories", key: "id" },
+      },
+      warehouseId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: { model: "warehouses", key: "id" },
       },
       // priceBookId: {
       //   type: DataTypes.INTEGER,
@@ -52,9 +57,17 @@ export default (sequelize, DataTypes) => {
 
   Inventory.associate = (models) => {
     Inventory.belongsTo(models.Suppliers, { foreignKey: "supplierId", as: "supplier" }, { onDelete: "CASCADE" });
-    Inventory.belongsTo(models.PriceBookCategory, {
-      foreignKey: "category",
-      as: "categoryDetails",
+    
+    Inventory.belongsTo(models.InventoryCategory, {
+      foreignKey: "categoryId",
+      as: "inventoryCategory",
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
+    });
+
+    Inventory.belongsTo(models.Warehouse, {
+      foreignKey: "warehouseId",
+      as: "warehouse",
       onDelete: "SET NULL",
       onUpdate: "CASCADE",
     });

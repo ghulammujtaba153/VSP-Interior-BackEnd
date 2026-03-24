@@ -1,6 +1,6 @@
 import db from '../../models/index.js';
 import { Sequelize, Op, fn, col } from "sequelize";
-const {Inventory, Audit, Suppliers, PriceBookCategory, PriceBook, PurchaseLineItem} = db;
+const {Inventory, Audit, Suppliers, InventoryCategory, PriceBook, PurchaseLineItem} = db;
 
 export const createInventory = async (req, res) => {
     try {
@@ -30,11 +30,11 @@ export const importCSV = async (req, res) => {
       return res.status(400).json({ message: "Invalid data format" });
     }
 
-    const { Inventory, Suppliers, PriceBookCategory } = db;
+    const { Inventory, Suppliers, InventoryCategory } = db;
 
     // 2️⃣ Fetch all suppliers and categories (categories are independent of suppliers)
     const allSuppliers = await Suppliers.findAll({});
-    const allCategories = await PriceBookCategory.findAll({});
+    const allCategories = await InventoryCategory.findAll({});
     
     console.log("allSuppliers", allSuppliers);
     console.log("allCategories", allCategories);
@@ -140,7 +140,7 @@ export const importCSV = async (req, res) => {
       const inventoryItem = {
         name: item.name?.trim(),
         description: item.description?.trim() || null,
-        category: categoryId, // REQUIRED field in model
+        categoryId: categoryId, // REQUIRED field in model
         supplierId: supplierId,
         costPrice: item.costPrice || 0,
         quantity: item.quantity || 0,
@@ -226,7 +226,7 @@ export const getInventory = async (req, res) => {
 
   // Filter by category
   if (categoryId && categoryId.trim() !== "") {
-    whereConditions.category = categoryId;
+    whereConditions.categoryId = categoryId;
   }
 
   // Filter by priceBook
@@ -259,7 +259,7 @@ export const getInventory = async (req, res) => {
     const { rows, count } = await db.Inventory.findAndCountAll({
       include: [
         { model: db.Suppliers, as: "supplier" },
-        { model: db.PriceBookCategory, as: "categoryDetails" },
+        { model: db.InventoryCategory, as: "inventoryCategory" },
         
       ],
       where: whereConditions,

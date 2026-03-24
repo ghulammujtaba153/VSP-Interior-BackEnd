@@ -14,14 +14,6 @@ export default (sequelize, DataTypes) => {
                 key: 'id',
             },
         },
-        priceBookCategoryId: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'PriceBookCategory',
-                key: 'id',
-            },
-        },
         name: {
             type: DataTypes.STRING,
             allowNull: false,
@@ -35,27 +27,25 @@ export default (sequelize, DataTypes) => {
                 }
             },
         },
-        description: {
+        variant: {
             type: DataTypes.STRING,
             allowNull: true,
             set(value) {
                 if (typeof value === 'string' && value.length > 0) {
                     const formatted =
-                      value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-                    this.setDataValue('description', formatted);
+                      value.charAt(0).toUpperCase() + value.slice(1);
+                    this.setDataValue('variant', formatted);
                 } else {
-                    this.setDataValue('description', value);
+                    this.setDataValue('variant', value);
                 }
             },
         },
-        unit: {
-            type: DataTypes.STRING,
+        dynamic: {
+            type: DataTypes.JSON,
             allowNull: false,
+            defaultValue: false,
         },
-        price: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false,
-        },
+        
         version: {
             type: DataTypes.STRING,
             allowNull: true,
@@ -87,8 +77,8 @@ export default (sequelize, DataTypes) => {
         indexes: [
             {
                 unique: true,
-                fields: ['name', 'priceBookCategoryId', 'version'],
-                name: 'unique_pricebook_name_category_version'
+                fields: ['name', 'version'],
+                name: 'unique_pricebook_name_version'
             }
         ]
     })
@@ -101,11 +91,6 @@ export default (sequelize, DataTypes) => {
         // });
         PriceBook.belongsTo(models.Suppliers, {
             foreignKey: 'supplierId',
-            onDelete: 'CASCADE',
-        });
-
-        PriceBook.belongsTo(models.PriceBookCategory, {
-            foreignKey: 'priceBookCategoryId',
             onDelete: 'CASCADE',
         });
     };

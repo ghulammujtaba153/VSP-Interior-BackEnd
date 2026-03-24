@@ -90,7 +90,7 @@ export const importCSV = async (req, res) => {
 
 export const getClients = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search = '', sortBy = 'createdAt', order = 'DESC' } = req.query;
+        const { page = 1, limit = 10, search = '', sortBy = 'id', order = 'DESC' } = req.query;
         const offset = (page - 1) * limit;
 
         // Build search conditions

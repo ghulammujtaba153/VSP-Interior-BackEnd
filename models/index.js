@@ -18,7 +18,6 @@ import CabinetCategoriesModel from './cabinetCategories.model.js';
 import CabinetSubCategoriesModel from './cabinetSubCategories.model.js';
 import CabinetQuoteModel from './cabinetQuote.model.js';
 import CabinetMaterialModel from './cabinetMaterial.model.js';
-import PriceBookCategoryModel from './priceBookCategory.model.js';
 import PriceBookModel from './priceBook.model.js';
 import WorkerModel from './worker.model.js';
 // import projectModel from './project.model.js';
@@ -43,6 +42,8 @@ import ProjectKanbanModel from './projectKanban.model.js';
 import NotesModel from './notes.model.js';
 import ProjectPurchaseModel from './projectPurchase.model.js';
 import PurchaseLineItemModel from './purchaseLineItem.model.js';
+import WarehouseModel from "./warehouse.model.js";
+import InventoryCategoryModel from "./inventoryCategory.model.js";
 
 dotenv.config();
 
@@ -76,7 +77,6 @@ const CabinetCategories = CabinetCategoriesModel(sequelize, Sequelize.DataTypes)
 const CabinetSubCategories = CabinetSubCategoriesModel(sequelize, Sequelize.DataTypes)
 const CabinetQuote = CabinetQuoteModel(sequelize, Sequelize.DataTypes)
 const CabinetMaterial = CabinetMaterialModel(sequelize, Sequelize.DataTypes)
-const PriceBookCategory = PriceBookCategoryModel(sequelize, Sequelize.DataTypes)
 const PriceBook = PriceBookModel(sequelize, Sequelize.DataTypes)
 const Worker = WorkerModel(sequelize, Sequelize.DataTypes)
 // const Project = projectModel(sequelize, Sequelize.DataTypes);
@@ -101,6 +101,8 @@ const ProjectKanban = ProjectKanbanModel(sequelize, Sequelize.DataTypes);
 const Notes = NotesModel(sequelize, Sequelize.DataTypes);
 const ProjectPurchase = ProjectPurchaseModel(sequelize, Sequelize.DataTypes);
 const PurchaseLineItem = PurchaseLineItemModel(sequelize, Sequelize.DataTypes);
+const InventoryCategory = InventoryCategoryModel(sequelize, Sequelize.DataTypes);
+const Warehouse = WarehouseModel(sequelize, Sequelize.DataTypes);
 
 // Prepare DB object
 const db = {
@@ -120,7 +122,6 @@ const db = {
   CabinetSubCategories,
   CabinetQuote,
   CabinetMaterial,
-  PriceBookCategory,
   PriceBook,
   Worker,
   // Project,
@@ -145,6 +146,8 @@ const db = {
   Notes,
   ProjectPurchase,
   PurchaseLineItem,
+  InventoryCategory,
+  Warehouse,
   sequelize,
   Sequelize,
 };

@@ -1,23 +1,17 @@
 import db from '../../models/index.js';
 import { Op } from "sequelize";
 
-const { PriceBook, PriceBookCategory, Suppliers } = db;
+const { PriceBook, Suppliers } = db;
 
 
 
 export const createPriceBook = async (req, res) => {
   try {
-    const { priceBookCategoryId, name, version, supplierId } = req.body;
+    const { name, version, supplierId } = req.body;
 
     // Validate required fields
     if (!supplierId) {
       return res.status(400).json({ error: "supplierId is required" });
-    }
-
-    // Verify category exists
-    const category = await PriceBookCategory.findByPk(priceBookCategoryId);
-    if (!category) {
-      return res.status(404).json({ error: "Category not found" });
     }
 
     // Verify supplier exists
@@ -32,7 +26,6 @@ export const createPriceBook = async (req, res) => {
     const existingItem = await PriceBook.findOne({
       where: {
         name,
-        priceBookCategoryId,
         version: targetVersion,
       },
     });
@@ -50,9 +43,7 @@ export const createPriceBook = async (req, res) => {
         { versionEndDate: now, status: "inactive" },
         {
           where: {
-            priceBookCategoryId,
             name,
-
             version: { [Op.ne]: version }, // mark all previous versions as ended
           },
         }
@@ -82,29 +73,11 @@ export const importPriceBook = async (req, res) => {
 
         const targetVersion = version || 'v1';
 
-        // 1) Ensure categories exist (categories are now independent, no supplierId)
-        const categoryNames = Array.from(new Set(items.map(i => i.category).filter(Boolean)));
-
         // Verify supplier exists
         const supplier = await Suppliers.findByPk(supplierId);
         if (!supplier) {
             return res.status(404).json({ message: 'Supplier not found' });
         }
-
-        // Fetch existing categories (categories are now independent, no supplier filter)
-        const existingCategories = await PriceBookCategory.findAll({
-            attributes: ['id', 'name']
-        });
-        const nameToId = new Map(existingCategories.map(c => [c.name, c.id]));
-
-        // Determine which categories need to be created (without supplierId)
-        const toCreate = categoryNames
-            .filter(name => !nameToId.has(name))
-            .map(name => ({ name })); // No supplierId in category
-        const createdCategories = toCreate.length > 0
-            ? await PriceBookCategory.bulkCreate(toCreate, { returning: true })
-            : [];
-        createdCategories.forEach(c => nameToId.set(c.name, c.id));
 
         // 2) Deduplicate items by name within the request
         const uniqueItems = [];
@@ -118,26 +91,22 @@ export const importPriceBook = async (req, res) => {
         }
 
         // 3) Fetch existing price book item names for these categories and version
-        const categoryIds = Array.from(new Set(uniqueItems.map(i => nameToId.get(i.category)).filter(Boolean)));
         const existingItems = await PriceBook.findAll({
-            where: { priceBookCategoryId: categoryIds, version: targetVersion },
-            attributes: ['name', 'priceBookCategoryId', 'version']
+            where: { version: targetVersion },
+            attributes: ['name', 'version']
         });
-        const existsKey = new Set(existingItems.map(i => `${i.priceBookCategoryId}::${i.name}::${i.version}`));
+        const existsKey = new Set(existingItems.map(i => `${i.name}::${i.version}`));
 
-        // 4) Prepare new rows (skip duplicates, include supplierId)
         const rowsToInsert = uniqueItems
             .map(i => ({
                 supplierId, // Add supplierId to each pricebook item
-                priceBookCategoryId: nameToId.get(i.category),
                 name: i.name,
-                description: i.description || null,
-                unit: i.unit,
-                price: i.price,
+                variant: i.variant || i.description || null,
+                dynamic: i.dynamic || i.unit || false,
                 status: i.status === 'inactive' ? 'inactive' : 'active',
                 version: targetVersion
             }))
-            .filter(r => r.priceBookCategoryId && !existsKey.has(`${r.priceBookCategoryId}::${r.name}::${r.version}`));
+            .filter(r => !existsKey.has(`${r.name}::${r.version}`));
 
         const created = rowsToInsert.length > 0
             ? await PriceBook.bulkCreate(rowsToInsert, { returning: true })
@@ -147,7 +116,6 @@ export const importPriceBook = async (req, res) => {
             message: `PriceBook processed: inserted ${created.length} items in ${targetVersion}, skipped ${uniqueItems.length - created.length} duplicate(s).`,
             insertedCount: created.length,
             duplicateCount: uniqueItems.length - created.length,
-            categoriesCreated: createdCategories.length,
             version: targetVersion,
             items: created
         });
@@ -161,15 +129,17 @@ export const importPriceBook = async (req, res) => {
 
 export const getPriceBook = async (req, res) => {
     try {
+        const whereClause = {};
+        if (req.params.id) {
+            // Check if it's a numeric ID (could be supplierId or categoryId legacy)
+            // Given the new context, we can treat it as a filter by supplier if needed
+            // But for now, let's treat it as "fetch all" if no specific identifier is standard
+            whereClause.supplierId = req.params.id;
+        }
+
         const priceBook = await PriceBook.findAll({
-            where: {
-                priceBookCategoryId: req.params.id
-            },
+            where: whereClause,
             include: [
-                { 
-                    model: PriceBookCategory,
-                    attributes: ["id", "name"]
-                },
                 {
                     model: Suppliers,
                     attributes: ["id", "name", "email", "phone"],
@@ -186,7 +156,7 @@ export const getPriceBook = async (req, res) => {
 export const updatePriceBook = async (req, res) => {
     try {
         const itemId = req.params.id;
-        const { name, priceBookCategoryId, version, supplierId } = req.body;
+        const { name, version, supplierId } = req.body;
 
         // Validate supplier exists if supplierId is provided
         if (supplierId) {
@@ -196,7 +166,7 @@ export const updatePriceBook = async (req, res) => {
             }
         }
 
-        if (name || priceBookCategoryId || version) {
+        if (name || version) {
             // Get current item
             const currentItem = await PriceBook.findByPk(itemId);
             
@@ -206,15 +176,13 @@ export const updatePriceBook = async (req, res) => {
 
             // Build where clause for duplicate check
             const checkName = name || currentItem.name;
-            const checkCategory = priceBookCategoryId || currentItem.priceBookCategoryId;
             const checkVersion = version || currentItem.version;
 
 
-            // Check if another item exists with same name + category + version
+            // Check if another item exists with same name + version
             const existingItem = await PriceBook.findOne({
                 where: {
                     name: checkName,
-                    priceBookCategoryId: checkCategory,
                     version: checkVersion
                 }
             });
@@ -242,14 +210,13 @@ export const updatePriceBook = async (req, res) => {
 
 
 export const getPriceBookHistory = async (req, res) => {
-  const { name, priceBookCategoryId } = req.query;
-  console.log('Fetching history for:', name, priceBookCategoryId);
+  const { name } = req.query;
+  console.log('Fetching history for:', name);
 
   try {
     const whereClause = {};
 
     if (name) whereClause.name = name;
-    if (priceBookCategoryId) whereClause.priceBookCategoryId = priceBookCategoryId;
 
     const priceBooks = await PriceBook.findAll({
       where: whereClause,
@@ -276,13 +243,12 @@ export const deletePriceBook = async (req, res) => {
             return res.status(404).json({ error: 'Item not found' });
         }
 
-        const { name, priceBookCategoryId, version } = itemToDelete;
+        const { name, version } = itemToDelete;
 
-        // Find all other versions of this item (same name, category, different version)
+        // Find all other versions of this item (same name, different version)
         const allVersions = await PriceBook.findAll({
             where: {
                 name,
-                priceBookCategoryId,
                 id: { [Op.ne]: itemId } // Exclude current item
             },
             attributes: ['id', 'version', 'status'],

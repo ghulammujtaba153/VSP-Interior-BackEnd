@@ -6,6 +6,7 @@ const priceBookRouter = express.Router();
 
 priceBookRouter.post("/create", createPriceBook);
 priceBookRouter.post("/import", importPriceBook);
+priceBookRouter.get("/get", getPriceBook);
 priceBookRouter.get("/get/:id", getPriceBook);
 priceBookRouter.get("/history", getPriceBookHistory);
 priceBookRouter.put("/update/:id", updatePriceBook);

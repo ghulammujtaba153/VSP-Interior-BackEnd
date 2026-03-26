@@ -39,7 +39,7 @@ export const upload = multer({ storage, fileFilter });
 export const createNotice = async (req, res) => {
   try {
     // defensive: req.body may be undefined if parsing failed
-    const { title = "", content = "", status = "active" } = req.body || {};
+    const { title = "", content = "", status = "active", category = "announcement" } = req.body || {};
 
     let fileUrl = null;
     if (req.file) {
@@ -51,6 +51,7 @@ export const createNotice = async (req, res) => {
       title,
       content,
       status: status || "active",
+      category: category || "announcement",
       fileUrl,
     });
 
@@ -100,7 +101,7 @@ export const updateNotice = async (req, res) => {
   try {
     const { id } = req.params;
     // defensive
-    const { title = "", content = "", status = "active" } = req.body || {};
+    const { title = "", content = "", status = "active", category = "announcement" } = req.body || {};
 
     const notice = await Notice.findByPk(id);
     if (!notice) {
@@ -128,6 +129,7 @@ export const updateNotice = async (req, res) => {
       title,
       content,
       status,
+      category,
       fileUrl,
     });
 

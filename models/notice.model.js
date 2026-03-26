@@ -25,6 +25,11 @@ export default (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: "active",
       },
+      category: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: "announcement",
+      },
     },
     {
       tableName: "notices",

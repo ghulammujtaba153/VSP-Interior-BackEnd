@@ -14,20 +14,15 @@ export const createEmployeeTimeSheet = async (req, res) => {
 
 export const getEmployeeTimeSheet = async (req, res) => {
   try {
-    let { page = 1, limit = 10, Search, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, Search, startDate, endDate, status } = req.query;
     page = parseInt(page);
     limit = parseInt(limit);
 
     const offset = (page - 1) * limit;
 
     const whereConditions = {};
-
-    if (Search && Search.trim() !== "") {
-      whereConditions[Op.or] = [
-        { name: { [Op.iLike]: `%${Search}%` } },
-        { email: { [Op.iLike]: `%${Search}%` } },
-        { phone: { [Op.iLike]: `%${Search}%` } },
-      ];
+    if (status && status !== "all") {
+      whereConditions.status = status;
     }
 
     if (startDate && startDate.trim() !== "") {
@@ -40,25 +35,40 @@ export const getEmployeeTimeSheet = async (req, res) => {
       };
     }
 
-    const employeeTimeSheet = await EmployeeTimeSheet.findAndCountAll({
+    const includeOptions = {
+        model: User,
+        as: "employee",
+        attributes: ["id", "name", "email"],
+    };
+
+    if (Search && Search.trim() !== "") {
+        includeOptions.where = {
+            [Op.or]: [
+                { name: { [Op.iLike]: `%${Search}%` } },
+                { email: { [Op.iLike]: `%${Search}%` } },
+            ],
+        };
+    }
+
+    // Main query for data
+    const { count, rows } = await EmployeeTimeSheet.findAndCountAll({
       where: whereConditions,
       offset,
       limit,
-      order: [["createdAt", "DESC"]],
-      include: [
-        {
-          model: User,
-          as: "employee",
-          attributes: ["id", "name", "email"],
-        },
-      ],
+      order: [["date", "DESC"], ["createdAt", "DESC"]],
+      include: [includeOptions],
     });
 
+    // Global Stats for the "Rect" section (all-time)
+    const totalGlobal = await EmployeeTimeSheet.count();
+    const pendingGlobal = await EmployeeTimeSheet.count({ where: { status: 'pending' } });
+
     res.status(200).json({
-      total: employeeTimeSheet.count,
+      total: count,
       page,
       limit,
-      data: employeeTimeSheet.rows,
+      data: rows,
+      stats: { total: totalGlobal, pendingCount: pendingGlobal }
     });
   } catch (error) {
     console.error(error);

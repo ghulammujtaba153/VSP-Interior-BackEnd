@@ -30,6 +30,7 @@ import projectKanbanRouter from "./project/jobScheduling/projectKanban.routes.js
 // import projectGanttChartRouter from "./project/jobScheduling/projectGanttChart.routes.js";
 import noteRouter from "./project/jobScheduling/note.routes.js";
 import purchaseRouter from "./project/purchase/purchase.routes.js";
+import quoteRouter from "./quote.routes.js";
 
 
 const router = express.Router();
@@ -67,5 +68,6 @@ router.use("/project-kanban", projectKanbanRouter);
 // router.use("/project-gantt-chart", projectGanttChartRouter);
 router.use("/note", noteRouter);
 router.use("/purchases", purchaseRouter);
+router.use("/quotes", quoteRouter);
 
 export default router;

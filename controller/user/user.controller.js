@@ -8,36 +8,56 @@ const { User, Role, Permission, Resource, Audit, EmployeeTimeSheet, EmployeeLeav
 
 export const createUser = async (req, res) => {
     try {
-      const { name, email, password, roleId } = req.body;
+      const { name, email, password, roleId, userId } = req.body;
 
+      // Check if user already exists
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+          return res.status(400).json({ error: 'User with this email already exists' });
+      }
 
-      // Create user
-      const hashedPassword = await bcrypt.hash(password, 10);
+      // Generate a temporary random password if none is provided (common for invites)
+      const tempPassword = password || Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
+      const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
       const user = await User.create({ name, email, password: hashedPassword, roleId });
   
-      // Generate reset token
-      const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '2d' });
+      // Generate invite/reset token expiring in 1 hour to match the email text
+      const token = jwt.sign({ userId: user.id, purpose: 'invite' }, process.env.JWT_SECRET, { expiresIn: '1h' });
   
-      // Send password reset email
-      const resetLink = `https://vps-interior-front-end-ten.vercel.app/reset-password?token=${token}`;
+      // Send invitation / password setup email
+      const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
       const emailHTML = `
-        <p>Hello ${name},</p>
-        <p>Your account has been created. Click below to set your password:</p>
-        <a href="${resetLink}" target="_blank">${resetLink}</a>
-        <p>This link expires in 1 hour.</p>
+        <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #333;">
+          <p>Hello ${name},</p>
+          <p>You have been invited to join the <strong>VSP Admin Panel</strong>.</p>
+          <p>Your account has been successfully created. Please click the button below to set your password and access your account:</p>
+          <p style="margin-top: 20px; margin-bottom: 20px;">
+            <a href="${resetLink}" target="_blank" style="display:inline-block;padding:12px 24px;color:#fff;background-color:#007BFF;text-decoration:none;border-radius:4px;font-weight:bold;">Set Your Password</a>
+          </p>
+          <p>Or copy and paste this link into your browser:</p>
+          <p><a href="${resetLink}" target="_blank">${resetLink}</a></p>
+          <p><em>This link is secure and will expire in 1 hour.</em></p>
+          <p>If you did not expect this invitation, you can safely ignore this email.</p>
+        </div>
       `;
   
-      await sendEmail(email, 'Set Your Password - VSP Admin Panel', emailHTML);
+      await sendEmail(email, 'Invitation to Join VSP Admin Panel', emailHTML);
 
-      await Audit.create({ userId: user.id, action: 'create', tableName: 'users', newData: user.get() });
+      // Audit log: Record the inviter's ID if provided, otherwise default to the new user's ID
+      await Audit.create({ 
+          userId: userId || user.id, 
+          action: 'create', 
+          tableName: 'users', 
+          newData: user.get() 
+      });
   
-      res.status(201).json({ user, message: 'User created and email sent' });
+      res.status(201).json({ user, message: 'User invited and email sent successfully' });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: error.message });
     }
-  };
+};
 
 
 export const loginUser = async (req, res) => {

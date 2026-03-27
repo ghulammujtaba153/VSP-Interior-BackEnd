@@ -45,6 +45,7 @@ import PurchaseLineItemModel from './purchaseLineItem.model.js';
 import WarehouseModel from "./warehouse.model.js";
 import InventoryCategoryModel from "./inventoryCategory.model.js";
 import QuoteModel from "./quote.model.js";
+import PayrollModel from "./payroll.model.js";
 
 dotenv.config();
 
@@ -105,6 +106,7 @@ const PurchaseLineItem = PurchaseLineItemModel(sequelize, Sequelize.DataTypes);
 const InventoryCategory = InventoryCategoryModel(sequelize, Sequelize.DataTypes);
 const Warehouse = WarehouseModel(sequelize, Sequelize.DataTypes);
 const Quote = QuoteModel(sequelize, Sequelize.DataTypes);
+const Payroll = PayrollModel(sequelize, Sequelize.DataTypes);
 
 // Prepare DB object
 const db = {
@@ -151,6 +153,7 @@ const db = {
   InventoryCategory,
   Warehouse,
   Quote,
+  Payroll,
   sequelize,
   Sequelize,
 };

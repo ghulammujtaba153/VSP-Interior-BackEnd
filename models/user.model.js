@@ -34,6 +34,10 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
+      salary: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
       status: {
         type: DataTypes.ENUM('active', 'suspended'),
         allowNull: false,

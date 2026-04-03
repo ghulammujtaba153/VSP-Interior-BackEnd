@@ -307,10 +307,42 @@ export const getStaffProfile = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.status(200).json(user);
+    const userData = user.toJSON();
+
+    // Calculate total hours worked for each timesheet
+    if (userData.EmployeeTimeSheets) {
+      userData.EmployeeTimeSheets = userData.EmployeeTimeSheets.map(ts => {
+        let netHours = 0;
+        if (ts.startTime && ts.endTime) {
+          const s = new Date(`1970-01-01T${ts.startTime}`);
+          const e = new Date(`1970-01-01T${ts.endTime}`);
+          let diff = (e - s) / (1000 * 60 * 60);
+          
+          // Parse breakTime either as float ("1.5") or HH:MM string ("01:30")
+          let breakAmount = 0;
+          if (ts.breakTime) {
+            if (ts.breakTime.includes(':')) {
+              const parts = ts.breakTime.split(":");
+              const h = parseInt(parts[0], 10) || 0;
+              const m = parseInt(parts[1], 10) || 0;
+              breakAmount = h + (m / 60);
+            } else {
+              breakAmount = parseFloat(ts.breakTime) || 0;
+            }
+          }
+
+          netHours = Math.max(0, diff - breakAmount);
+        }
+        return {
+          ...ts,
+          netHours: Number(netHours.toFixed(2))
+        };
+      });
+    }
+
+    res.status(200).json(userData);
   } catch (error) {
     console.error("Error fetching staff profile:", error);
     res.status(500).json({ error: error.message });
   }
-  
 };

@@ -60,15 +60,37 @@ export const getEmployeeTimeSheet = async (req, res) => {
     });
 
     // Global Stats for the "Rect" section (all-time)
-    const totalGlobal = await EmployeeTimeSheet.count();
-    const pendingGlobal = await EmployeeTimeSheet.count({ where: { status: 'pending' } });
+    // We'll calculate these in-memory on the server for accuracy and simplicity
+    const allRecordsStat = await EmployeeTimeSheet.findAll({ attributes: ['status', 'startTime', 'endTime'] });
+    
+    const calculateHours = (start, end) => {
+        if (!start || !end) return 0;
+        const sParts = start.split(':');
+        const eParts = end.split(':');
+        const s = new Date(1970, 0, 1, sParts[0], sParts[1]);
+        const e = new Date(1970, 0, 1, eParts[0], eParts[1]);
+        let diff = (e - s) / (1000 * 60 * 60);
+        if (diff < 0) diff += 24;
+        return diff;
+    };
+
+    const totalGlobal = allRecordsStat.length;
+    const pendingGlobal = allRecordsStat.filter(t => t.status === 'pending').length;
+    const approvedList = allRecordsStat.filter(t => t.status === 'approved');
+    const netHours = approvedList.reduce((acc, t) => acc + calculateHours(t.startTime, t.endTime), 0);
+    const avgWorkload = approvedList.length > 0 ? (netHours / approvedList.length) : 0;
 
     res.status(200).json({
       total: count,
       page,
       limit,
       data: rows,
-      stats: { total: totalGlobal, pendingCount: pendingGlobal }
+      stats: { 
+        total: totalGlobal, 
+        pendingCount: pendingGlobal, 
+        approvedTotal: netHours,
+        avgWorkload: avgWorkload
+      }
     });
   } catch (error) {
     console.error(error);

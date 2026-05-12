@@ -15,23 +15,24 @@ dotenv.config();
 
 const app = express();
 
+const corsOptions = {
+  origin: [
+    "http://localhost:3000",
+    "https://demo-vps-interior-front-end-ten.vercel.app",
+    "https://vps-interior-front-end-ten.vercel.app",
+    "https://dev.myvsp.co.nz",
+    "https://myvsp.co.nz",
+    "https://www.myvsp.co.nz",
+  ],
+  credentials: true,
+};
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  cors({
-    origin: [
-      "http://localhost:3000",
-      "https://demo-vps-interior-front-end-ten.vercel.app",
-      "https://vps-interior-front-end-ten.vercel.app",
-      "https://dev.myvsp.co.nz",
-      "https://myvsp.co.nz",
-      "https://www.myvsp.co.nz",
-    ],
-    credentials: true,
-  })
-);
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 
 app.use("/uploads", express.static("uploads"));
@@ -46,7 +47,7 @@ app.use('/api', router);
 // Start server
 const PORT = process.env.PORT || 5000;
 
-app.use("/", (req, res) => {
+app.get("/", (req, res) => {
   res.send("Welcome to the VPS Interior API");
 });
 

@@ -32,7 +32,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+// app.options("*", cors(corsOptions));
+
+app.options("(.*)", cors(corsOptions));
 
 
 app.use("/uploads", express.static("uploads"));

@@ -14,20 +14,15 @@ export const createEmployeeTimeSheet = async (req, res) => {
 
 export const getEmployeeTimeSheet = async (req, res) => {
   try {
-    let { page = 1, limit = 10, Search, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, Search, startDate, endDate, status } = req.query;
     page = parseInt(page);
     limit = parseInt(limit);
 
     const offset = (page - 1) * limit;
 
     const whereConditions = {};
-
-    if (Search && Search.trim() !== "") {
-      whereConditions[Op.or] = [
-        { name: { [Op.iLike]: `%${Search}%` } },
-        { email: { [Op.iLike]: `%${Search}%` } },
-        { phone: { [Op.iLike]: `%${Search}%` } },
-      ];
+    if (status && status !== "all") {
+      whereConditions.status = status;
     }
 
     if (startDate && startDate.trim() !== "") {
@@ -40,25 +35,62 @@ export const getEmployeeTimeSheet = async (req, res) => {
       };
     }
 
-    const employeeTimeSheet = await EmployeeTimeSheet.findAndCountAll({
+    const includeOptions = {
+        model: User,
+        as: "employee",
+        attributes: ["id", "name", "email"],
+    };
+
+    if (Search && Search.trim() !== "") {
+        includeOptions.where = {
+            [Op.or]: [
+                { name: { [Op.iLike]: `%${Search}%` } },
+                { email: { [Op.iLike]: `%${Search}%` } },
+            ],
+        };
+    }
+
+    // Main query for data
+    const { count, rows } = await EmployeeTimeSheet.findAndCountAll({
       where: whereConditions,
       offset,
       limit,
-      order: [["createdAt", "DESC"]],
-      include: [
-        {
-          model: User,
-          as: "employee",
-          attributes: ["id", "name", "email"],
-        },
-      ],
+      order: [["date", "DESC"], ["createdAt", "DESC"]],
+      include: [includeOptions],
     });
 
+    // Global Stats for the "Rect" section (all-time)
+    // We'll calculate these in-memory on the server for accuracy and simplicity
+    const allRecordsStat = await EmployeeTimeSheet.findAll({ attributes: ['status', 'startTime', 'endTime'] });
+    
+    const calculateHours = (start, end) => {
+        if (!start || !end) return 0;
+        const sParts = start.split(':');
+        const eParts = end.split(':');
+        const s = new Date(1970, 0, 1, sParts[0], sParts[1]);
+        const e = new Date(1970, 0, 1, eParts[0], eParts[1]);
+        let diff = (e - s) / (1000 * 60 * 60);
+        if (diff < 0) diff += 24;
+        return diff;
+    };
+
+    const totalGlobal = allRecordsStat.length;
+    const pendingGlobal = allRecordsStat.filter(t => t.status === 'pending').length;
+    const approvedList = allRecordsStat.filter(t => t.status === 'approved');
+    const netHours = approvedList.reduce((acc, t) => acc + calculateHours(t.startTime, t.endTime), 0);
+    const avgWorkload = approvedList.length > 0 ? (netHours / approvedList.length) : 0;
+
     res.status(200).json({
-      total: employeeTimeSheet.count,
+      total: count,
       page,
       limit,
-      data: employeeTimeSheet.rows,
+      data: rows,
+      stats: { 
+        total: totalGlobal, 
+        pendingCount: pendingGlobal, 
+        approvedTotal: netHours,
+        avgWorkload: avgWorkload
+      }
     });
   } catch (error) {
     console.error(error);

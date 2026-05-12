@@ -22,11 +22,7 @@ export default (sequelize, DataTypes) => {
       },
       endTime: {
         type: DataTypes.TIME,
-        allowNull: false,
-      },
-      breakTime: {
-        type: DataTypes.TIME,
-        allowNull: false,
+        allowNull: true,
       },
       overWork: {
         type: DataTypes.TIME, // assuming you want to store time worked overtime

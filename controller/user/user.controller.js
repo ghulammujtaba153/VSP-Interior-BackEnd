@@ -8,7 +8,7 @@ const { User, Role, Permission, Resource, Audit, EmployeeTimeSheet, EmployeeLeav
 
 export const createUser = async (req, res) => {
     try {
-      const { name, email, password, roleId, userId } = req.body;
+      const { name, email, password, roleId, userId, salary } = req.body;
 
       // Check if user already exists
       const existingUser = await User.findOne({ where: { email } });
@@ -20,7 +20,13 @@ export const createUser = async (req, res) => {
       const tempPassword = password || Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
       const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-      const user = await User.create({ name, email, password: hashedPassword, roleId });
+      const user = await User.create({ 
+        name, 
+        email, 
+        password: hashedPassword, 
+        roleId, 
+        salary: salary || null 
+      });
   
       // Generate invite/reset token expiring in 1 hour to match the email text
       const token = jwt.sign({ userId: user.id, purpose: 'invite' }, process.env.JWT_SECRET, { expiresIn: '1h' });
@@ -148,7 +154,7 @@ export const getUsers = async (req, res) => {
 export const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, email, password, role, roleId } = req.body;
+        const { name, email, password, role, roleId, salary } = req.body;
         const user = await User.findByPk(id);
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
@@ -156,6 +162,8 @@ export const updateUser = async (req, res) => {
         
         user.name = name;
         user.email = email;
+        user.salary = salary || null;
+        
         if (password) {
             const hashedPassword = await bcrypt.hash(password, 10);
             user.password = hashedPassword;
@@ -299,10 +307,42 @@ export const getStaffProfile = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.status(200).json(user);
+    const userData = user.toJSON();
+
+    // Calculate total hours worked for each timesheet
+    if (userData.EmployeeTimeSheets) {
+      userData.EmployeeTimeSheets = userData.EmployeeTimeSheets.map(ts => {
+        let netHours = 0;
+        if (ts.startTime && ts.endTime) {
+          const s = new Date(`1970-01-01T${ts.startTime}`);
+          const e = new Date(`1970-01-01T${ts.endTime}`);
+          let diff = (e - s) / (1000 * 60 * 60);
+          
+          // Parse breakTime either as float ("1.5") or HH:MM string ("01:30")
+          let breakAmount = 0;
+          if (ts.breakTime) {
+            if (ts.breakTime.includes(':')) {
+              const parts = ts.breakTime.split(":");
+              const h = parseInt(parts[0], 10) || 0;
+              const m = parseInt(parts[1], 10) || 0;
+              breakAmount = h + (m / 60);
+            } else {
+              breakAmount = parseFloat(ts.breakTime) || 0;
+            }
+          }
+
+          netHours = Math.max(0, diff - breakAmount);
+        }
+        return {
+          ...ts,
+          netHours: Number(netHours.toFixed(2))
+        };
+      });
+    }
+
+    res.status(200).json(userData);
   } catch (error) {
     console.error("Error fetching staff profile:", error);
     res.status(500).json({ error: error.message });
   }
-  
 };

@@ -37,6 +37,7 @@ app.use(cors(corsOptions));
 app.options("(.*)", cors(corsOptions));
 
 
+
 app.use("/uploads", express.static("uploads"));
 // app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 

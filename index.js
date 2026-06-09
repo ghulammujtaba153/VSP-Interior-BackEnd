@@ -32,9 +32,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(cors(corsOptions));
-// app.options("*", cors(corsOptions));
-
-app.options("(.*)", cors(corsOptions));
+// Express 5: use RegExp for catch-all OPTIONS (path-to-regexp v8 rejects "(.*)")
+app.options(/.*/, cors(corsOptions));
 
 
 

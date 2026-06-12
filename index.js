@@ -18,11 +18,13 @@ const app = express();
 const corsOptions = {
   origin: [
     "http://localhost:3000",
+    "http://192.168.1.126:3000",
     "https://demo-vps-interior-front-end-ten.vercel.app",
     "https://vps-interior-front-end-ten.vercel.app",
     "https://dev.myvsp.co.nz",
     "https://myvsp.co.nz",
     "https://www.myvsp.co.nz",
+
   ],
   credentials: true,
 };

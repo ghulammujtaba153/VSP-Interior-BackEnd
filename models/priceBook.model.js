@@ -1,99 +1,116 @@
 export default (sequelize, DataTypes) => {
-   
-    const PriceBook = sequelize.define('priceBooks', {
-        id: {
-            type: DataTypes.INTEGER,
-            autoIncrement: true,
-            primaryKey: true,
+  const PriceBook = sequelize.define(
+    'priceBooks',
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
+      },
+      supplierId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Suppliers',
+          key: 'id',
         },
-        supplierId: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'Suppliers',
-                key: 'id',
-            },
+      },
+      sku: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      description: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      category: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      unit: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      variant: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      basePrice: {
+        type: DataTypes.DECIMAL(12, 4),
+        allowNull: true,
+      },
+      priceTiers: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: [],
+      },
+      attributes: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: {},
+      },
+      currency: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'NZD',
+      },
+      dynamic: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: {},
+      },
+      importBatchId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      sourceFileName: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      version: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        defaultValue: 'v1',
+      },
+      versionEndDate: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null,
+      },
+      status: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'active',
+      },
+    },
+    {
+      tableName: 'priceBooks',
+      timestamps: true,
+      indexes: [
+        {
+          unique: true,
+          fields: ['supplierId', 'sku', 'version'],
+          name: 'unique_pricebook_supplier_sku_version',
         },
-        name: {
-            type: DataTypes.STRING,
-            allowNull: false,
-            set(value) {
-                if (typeof value === 'string' && value.length > 0) {
-                    const formatted =
-                      value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-                    this.setDataValue('name', formatted);
-                } else {
-                    this.setDataValue('name', value);
-                }
-            },
-        },
-        variant: {
-            type: DataTypes.STRING,
-            allowNull: true,
-            set(value) {
-                if (typeof value === 'string' && value.length > 0) {
-                    const formatted =
-                      value.charAt(0).toUpperCase() + value.slice(1);
-                    this.setDataValue('variant', formatted);
-                } else {
-                    this.setDataValue('variant', value);
-                }
-            },
-        },
-        dynamic: {
-            type: DataTypes.JSON,
-            allowNull: false,
-            defaultValue: false,
-        },
-        
-        version: {
-            type: DataTypes.STRING,
-            allowNull: true,
-            defaultValue: 'v1',
-        },
-        versionEndDate: {
-            type: DataTypes.DATE,
-            allowNull: true,
-            defaultValue: null,
-        },
-        status: {
-            type: DataTypes.STRING,
-            allowNull: false,
-            defaultValue: 'active',
-        },
-        createdAt: {
-            type: DataTypes.DATE,
-            allowNull: false,
-            defaultValue: DataTypes.NOW,
-        },
-        updatedAt: {
-            type: DataTypes.DATE,
-            allowNull: false,
-            defaultValue: DataTypes.NOW,
-        },
-    }, {
-        tableName: 'priceBooks',
-        timestamps: true,
-        indexes: [
-            {
-                unique: true,
-                fields: ['name', 'version'],
-                name: 'unique_pricebook_name_version'
-            }
-        ]
+      ],
+    }
+  )
+
+  PriceBook.associate = (models) => {
+    PriceBook.belongsTo(models.Suppliers, {
+      foreignKey: 'supplierId',
+      as: 'supplier',
+      onDelete: 'CASCADE',
     })
+    PriceBook.belongsTo(models.PriceBookImport, {
+      foreignKey: 'importBatchId',
+      as: 'importBatch',
+    })
+  }
 
-    PriceBook.associate = (models) => {
- 
-        // PriceBook.hasMany(models.Inventory, {
-        //     foreignKey: 'priceBookId',
-        //     onDelete: 'CASCADE',
-        // });
-        PriceBook.belongsTo(models.Suppliers, {
-            foreignKey: 'supplierId',
-            onDelete: 'CASCADE',
-        });
-    };
-
-    return PriceBook;
+  return PriceBook
 }

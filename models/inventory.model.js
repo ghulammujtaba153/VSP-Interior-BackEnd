@@ -32,10 +32,11 @@ export default (sequelize, DataTypes) => {
         allowNull: true,
         references: { model: "warehouses", key: "id" },
       },
-      // priceBookId: {
-      //   type: DataTypes.INTEGER,
-      //   allowNull: true, 
-      // },
+      priceBookId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: { model: "priceBooks", key: "id" },
+      },
       supplierId: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -57,7 +58,7 @@ export default (sequelize, DataTypes) => {
 
   Inventory.associate = (models) => {
     Inventory.belongsTo(models.Suppliers, { foreignKey: "supplierId", as: "supplier" }, { onDelete: "CASCADE" });
-    
+
     Inventory.belongsTo(models.InventoryCategory, {
       foreignKey: "categoryId",
       as: "inventoryCategory",
@@ -72,13 +73,12 @@ export default (sequelize, DataTypes) => {
       onUpdate: "CASCADE",
     });
 
-    // Inventory.belongsTo(models.PriceBookCategory, { foreignKey: "category", as: "categoryDetails" }, { onDelete: 'SET NULL',
-    //   onUpdate: 'CASCADE', });
-    // Inventory.belongsTo(models.PriceBook, {
-    //   foreignKey: "priceBookId",
-    //   as: "priceBooks",
-    //   onDelete: "CASCADE",
-    // });
+    Inventory.belongsTo(models.PriceBook, {
+      foreignKey: "priceBookId",
+      as: "priceBook",
+      onDelete: "SET NULL",
+    });
+
     Inventory.hasMany(models.PurchaseLineItem, {
       foreignKey: "itemId",
       as: "purchaseLineItems",

@@ -5,15 +5,16 @@ import {
   getNoticeById,
   updateNotice,
   deleteNotice,
-  upload, // multer export from controller
+  upload,
 } from '../../controller/humanResource/notice.controller.js'
+import { hrAdmin, hrAuth } from '../../middleware/hrRouteGuards.js'
 
 const router = express.Router()
 
-router.post('/create', upload.single('file'), createNotice)
-router.get('/get', getNotices)
-router.get('/:id', getNoticeById)
-router.put('/update/:id', upload.single('file'), updateNotice)
-router.delete('/delete/:id', deleteNotice)
+router.post('/create', ...hrAdmin, upload.single('file'), createNotice)
+router.get('/get', ...hrAuth, getNotices)
+router.get('/:id', ...hrAuth, getNoticeById)
+router.put('/update/:id', ...hrAdmin, upload.single('file'), updateNotice)
+router.delete('/delete/:id', ...hrAdmin, deleteNotice)
 
 export default router

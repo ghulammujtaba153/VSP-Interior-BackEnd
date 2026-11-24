@@ -1,14 +1,25 @@
-import express from 'express';
-import { createEmployeeTimeSheet, deleteEmployeeTimeSheet, employeeTimeSheetByEmployeeId, getEmployeeTimeSheet, getEmployeeTimeSheetById, updateEmployeeTimeSheet } from '../../controller/humanResource/employeeTimeSheet.controller.js';
-// import { getEmployeeTimeSheetById } from './../../controller/human-resource/employeeTimeSheet.controller';
+import express from 'express'
+import {
+  createEmployeeTimeSheet,
+  deleteEmployeeTimeSheet,
+  employeeTimeSheetByEmployeeId,
+  getEmployeeTimeSheet,
+  getEmployeeTimeSheetById,
+  updateEmployeeTimeSheet,
+  submitEmployeeTimeSheet,
+  approveEmployeeTimeSheet,
+} from '../../controller/humanResource/employeeTimeSheet.controller.js'
+import { hrAdmin, hrAuth, hrSelfOrAdminById } from '../../middleware/hrRouteGuards.js'
 
-const employeeTimeSheetRouter = express.Router();
+const employeeTimeSheetRouter = express.Router()
 
-employeeTimeSheetRouter.post("/create", createEmployeeTimeSheet);
-employeeTimeSheetRouter.get("/get", getEmployeeTimeSheet);
-employeeTimeSheetRouter.get("/get/:id", getEmployeeTimeSheetById);
-employeeTimeSheetRouter.get("/get/employee/:id", employeeTimeSheetByEmployeeId);
-employeeTimeSheetRouter.delete("/delete/:id", deleteEmployeeTimeSheet);
-employeeTimeSheetRouter.put("/update/:id", updateEmployeeTimeSheet);
+employeeTimeSheetRouter.post('/create', ...hrAuth, createEmployeeTimeSheet)
+employeeTimeSheetRouter.get('/get', ...hrAuth, getEmployeeTimeSheet)
+employeeTimeSheetRouter.get('/get/employee/:id', ...hrSelfOrAdminById, employeeTimeSheetByEmployeeId)
+employeeTimeSheetRouter.get('/get/:id', ...hrAuth, getEmployeeTimeSheetById)
+employeeTimeSheetRouter.put('/update/:id', ...hrAuth, updateEmployeeTimeSheet)
+employeeTimeSheetRouter.post('/:id/submit', ...hrAuth, submitEmployeeTimeSheet)
+employeeTimeSheetRouter.post('/:id/approve', ...hrAuth, approveEmployeeTimeSheet)
+employeeTimeSheetRouter.delete('/delete/:id', ...hrAuth, deleteEmployeeTimeSheet)
 
 export default employeeTimeSheetRouter

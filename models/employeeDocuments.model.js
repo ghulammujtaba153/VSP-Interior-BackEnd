@@ -25,6 +25,18 @@ export default (sequelize, DataTypes) => {
           type: DataTypes.STRING,
           allowNull: false
       },
+      originalFilename: {
+          type: DataTypes.STRING,
+          allowNull: true,
+      },
+      mimeType: {
+          type: DataTypes.STRING,
+          allowNull: true,
+      },
+      fileSize: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+      },
       createdAt: {
           type: DataTypes.DATE,
           allowNull: false,

@@ -1,5 +1,6 @@
 import express from 'express';
 import { createProjectSetup, deleteProjectSetup, getAllProjectSetups, getProjectAmend, getProjectSetupById, getSalesStats, getProjectSetupStats, updateProjectSetup, updateStatus, getFinancialReport, getJobPerformanceStats, getAllProjectsBasicStats } from '../../controller/project/projectSetup.controller.js';
+import { catalogSearch, getPoDraftFromProject } from '../../controller/project/projectCatalog.controller.js';
 
 
 const projectSetupRouter = express.Router();
@@ -7,6 +8,8 @@ const projectSetupRouter = express.Router();
 
 projectSetupRouter.post('/create', createProjectSetup)
 
+projectSetupRouter.get('/catalog-search', catalogSearch);
+projectSetupRouter.get('/po-draft/:projectId', getPoDraftFromProject);
 projectSetupRouter.get('/get', getAllProjectSetups);
 projectSetupRouter.get('/get/:id', getProjectSetupById);
 projectSetupRouter.get('/get/amend/:id', getProjectAmend)

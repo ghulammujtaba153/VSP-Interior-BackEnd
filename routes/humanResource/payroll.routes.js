@@ -1,16 +1,17 @@
-import express from "express";
+import express from 'express'
 import {
   getAllPayroll,
   createPayroll,
   updatePayroll,
   deletePayroll,
-} from "../../controller/humanResource/payroll.controller.js";
+} from '../../controller/humanResource/payroll.controller.js'
+import { hrAdmin, hrAuth } from '../../middleware/hrRouteGuards.js'
 
-const router = express.Router();
+const router = express.Router()
 
-router.get("/get", getAllPayroll);
-router.post("/create", createPayroll);
-router.put("/update/:id", updatePayroll);
-router.delete("/delete/:id", deletePayroll);
+router.get('/get', ...hrAdmin, getAllPayroll)
+router.post('/create', ...hrAdmin, createPayroll)
+router.put('/update/:id', ...hrAdmin, updatePayroll)
+router.delete('/delete/:id', ...hrAdmin, deletePayroll)
 
-export default router;
+export default router

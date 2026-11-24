@@ -34,7 +34,23 @@ export default (sequelize, DataTypes) => {
                 this.setDataValue('reason', value);
               }
             },
-        }
+        },
+        requestedById: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        reviewedById: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        reviewedAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        rejectionReason: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
     }, {
       tableName: 'employee_document_requests',
       timestamps: true
@@ -42,6 +58,8 @@ export default (sequelize, DataTypes) => {
 
     EmployeeDocumentRequest.associate = (models) => {
         EmployeeDocumentRequest.belongsTo(models.User, { foreignKey: 'employeeId', as: 'employee' });
+        EmployeeDocumentRequest.belongsTo(models.User, { foreignKey: 'requestedById', as: 'requestedBy' });
+        EmployeeDocumentRequest.belongsTo(models.User, { foreignKey: 'reviewedById', as: 'reviewedBy' });
         EmployeeDocumentRequest.hasMany(models.EmployeeDocuments, { foreignKey: 'requestId', as: 'documents' });
     }
 

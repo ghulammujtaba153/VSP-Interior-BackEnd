@@ -36,6 +36,11 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      unique: true,
+    },
     status: {
       type: DataTypes.STRING, // Keep as STRING instead of ENUM
       allowNull: false,
@@ -47,6 +52,7 @@ export default (sequelize, DataTypes) => {
   });
 
   Worker.associate = (models) => {
+    Worker.belongsTo(models.User, { foreignKey: 'userId', as: 'user' })
     Worker.hasMany(models.ProjectSetupJobWorker, { 
       foreignKey: 'workerId', 
       as: 'jobAssignments'

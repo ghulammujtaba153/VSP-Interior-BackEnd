@@ -74,7 +74,6 @@ db.sequelize
       console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
     });
   })
-  .then(() => db.sequelize.sync({ alter: false }))
   .then(() => runHrSchemaPatches(db.sequelize))
   .then(() => runPricebookSchemaPatches(db.sequelize))
   .then(() => runProjectCatalogSchemaPatches(db.sequelize))

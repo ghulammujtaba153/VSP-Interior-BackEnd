@@ -174,7 +174,7 @@ export async function runPricebookSchemaPatches(sequelize) {
         "formatKey" VARCHAR(64),
         version VARCHAR(32) NOT NULL DEFAULT 'v1',
         status VARCHAR(32) NOT NULL DEFAULT 'processing',
-        "importedById" INTEGER REFERENCES users(id),
+        "importedById" INTEGER REFERENCES "Users"(id),
         "rowCount" INTEGER DEFAULT 0,
         "insertedCount" INTEGER DEFAULT 0,
         "updatedCount" INTEGER DEFAULT 0,

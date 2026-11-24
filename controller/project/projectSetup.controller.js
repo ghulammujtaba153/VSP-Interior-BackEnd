@@ -1,5 +1,6 @@
 import db from "../../models/index.js";
 import { Op, fn, col, literal, Sequelize } from "sequelize";
+import { materialIncludes } from "./projectCatalog.controller.js";
 
 const { 
   ProjectSetup, 
@@ -18,10 +19,13 @@ const {
   Inventory,
   User,
   EmployeeTimeSheet,
-  EmployeeLeave
+  EmployeeLeave,
+  PriceBook,
 } = db;
 
-// Helper function to convert empty strings to null for integer fields
+// Strip client-only ids before re-inserting child rows
+const stripRowIds = (rows) =>
+  (rows || []).map(({ id, createdAt, updatedAt, supplier, priceBook, inventory, ...rest }) => rest);
 const sanitizeData = (data) => {
   if (Array.isArray(data)) {
     return data.map(item => sanitizeData(item));
@@ -95,7 +99,7 @@ export const createProjectSetup = async (req, res) => {
     if (materials.length > 0) {
       const validMaterials = sanitizeData(materials).filter(mat => hasValidData(mat));
       if (validMaterials.length > 0) {
-        const materialsData = validMaterials.map((mat) => ({ ...mat, projectId }));
+        const materialsData = stripRowIds(validMaterials).map((mat) => ({ ...mat, projectId }));
         await ProjectMaterial.bulkCreate(materialsData, { transaction: t });
       }
     }
@@ -150,7 +154,7 @@ export const getAllProjectSetups = async (req, res) => {
       include: [
         { model: Clients, as: "client" },
         { model: ProjectRate, as: "rates" },
-        { model: ProjectMaterial, as: "materials" },
+        { model: ProjectMaterial, as: "materials", include: materialIncludes },
         { model: ProjectCostSheet, as: "costingSheet" },
       ],
       where: whereConditions,
@@ -186,7 +190,7 @@ export const getProjectSetupById = async (req, res) => {
       include: [
         { model: Clients, as: "client" },
         { model: ProjectRate, as: "rates" },
-        { model: ProjectMaterial, as: "materials" },
+        { model: ProjectMaterial, as: "materials", include: materialIncludes },
         { model: ProjectCostSheet, as: "costingSheet" },
       ],
     });
@@ -307,7 +311,7 @@ async function getProjectSnapshot(id, transaction) {
       {
         model: ProjectMaterial,
         as: "materials",
-        include: [{ model: Suppliers, as: "supplier" }],
+        include: materialIncludes,
       },
       { model: ProjectCostSheet, as: "costingSheet" },
     ],
@@ -329,7 +333,7 @@ async function getProjectSnapshot(id, transaction) {
     }),
     materials: await ProjectMaterial.findAll({
       where: { projectId: id },
-      include: [{ model: Suppliers, as: "supplier" }],
+      include: materialIncludes,
       raw: false,
       transaction,
     }),
@@ -350,7 +354,7 @@ export const updateProjectSetup = async (req, res) => {
         {
           model: ProjectMaterial,
           as: "materials",
-          include: [{ model: Suppliers, as: "supplier" }],
+          include: materialIncludes,
         },
         { model: ProjectCostSheet, as: "costingSheet" },
       ],
@@ -402,7 +406,7 @@ export const updateProjectSetup = async (req, res) => {
     if (materials.length > 0) {
       const validMaterials = sanitizeData(materials).filter(mat => hasValidData(mat));
       if (validMaterials.length > 0) {
-        const materialsData = validMaterials.map((mat) => ({ ...mat, projectId: id }));
+        const materialsData = stripRowIds(validMaterials).map((mat) => ({ ...mat, projectId: id }));
         await ProjectMaterial.bulkCreate(materialsData, { transaction: t });
       }
     }

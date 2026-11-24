@@ -19,6 +19,7 @@ import CabinetSubCategoriesModel from './cabinetSubCategories.model.js';
 import CabinetQuoteModel from './cabinetQuote.model.js';
 import CabinetMaterialModel from './cabinetMaterial.model.js';
 import PriceBookModel from './priceBook.model.js';
+import PriceBookImportModel from './priceBookImport.model.js';
 import WorkerModel from './worker.model.js';
 // import projectModel from './project.model.js';
 import inventoryAllocationModel from './inventoryAllocation.js';
@@ -45,22 +46,20 @@ import PurchaseLineItemModel from './purchaseLineItem.model.js';
 import WarehouseModel from "./warehouse.model.js";
 import InventoryCategoryModel from "./inventoryCategory.model.js";
 import QuoteModel from "./quote.model.js";
+import { createSequelize } from '../config/dbConfig.js';
 import PayrollModel from "./payroll.model.js";
+import EmploymentProfileModel from "./employmentProfile.model.js";
+import LeavePolicyModel from "./leavePolicy.model.js";
+import LeaveBalanceModel from "./leaveBalance.model.js";
+import PayPeriodModel from "./payPeriod.model.js";
+import PayrollRunModel from "./payrollRun.model.js";
+import PayslipModel from "./payslip.model.js";
+import PayrollDeductionModel from "./payrollDeduction.model.js";
+import CertificationModel from "./certification.model.js";
 
 dotenv.config();
 
-const isSupabase = !!process.env.DATABASE_URL;
-
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
-      dialect: 'postgres',
-      dialectOptions: {
-        ssl: {
-          require: true,
-          rejectUnauthorized: false,
-        },
-      },
-      logging: false,
-    })
+const sequelize = createSequelize(Sequelize);
 
 // Initialize models
 const User = UserModel(sequelize, Sequelize.DataTypes);
@@ -80,6 +79,7 @@ const CabinetSubCategories = CabinetSubCategoriesModel(sequelize, Sequelize.Data
 const CabinetQuote = CabinetQuoteModel(sequelize, Sequelize.DataTypes)
 const CabinetMaterial = CabinetMaterialModel(sequelize, Sequelize.DataTypes)
 const PriceBook = PriceBookModel(sequelize, Sequelize.DataTypes)
+const PriceBookImport = PriceBookImportModel(sequelize, Sequelize.DataTypes)
 const Worker = WorkerModel(sequelize, Sequelize.DataTypes)
 // const Project = projectModel(sequelize, Sequelize.DataTypes);
 const InventoryAllocation = inventoryAllocationModel(sequelize, Sequelize.DataTypes);
@@ -107,6 +107,14 @@ const InventoryCategory = InventoryCategoryModel(sequelize, Sequelize.DataTypes)
 const Warehouse = WarehouseModel(sequelize, Sequelize.DataTypes);
 const Quote = QuoteModel(sequelize, Sequelize.DataTypes);
 const Payroll = PayrollModel(sequelize, Sequelize.DataTypes);
+const EmploymentProfile = EmploymentProfileModel(sequelize, Sequelize.DataTypes);
+const LeavePolicy = LeavePolicyModel(sequelize, Sequelize.DataTypes);
+const LeaveBalance = LeaveBalanceModel(sequelize, Sequelize.DataTypes);
+const PayPeriod = PayPeriodModel(sequelize, Sequelize.DataTypes);
+const PayrollRun = PayrollRunModel(sequelize, Sequelize.DataTypes);
+const Payslip = PayslipModel(sequelize, Sequelize.DataTypes);
+const PayrollDeduction = PayrollDeductionModel(sequelize, Sequelize.DataTypes);
+const Certification = CertificationModel(sequelize, Sequelize.DataTypes);
 
 // Prepare DB object
 const db = {
@@ -127,6 +135,7 @@ const db = {
   CabinetQuote,
   CabinetMaterial,
   PriceBook,
+  PriceBookImport,
   Worker,
   // Project,
   InventoryAllocation,
@@ -154,6 +163,14 @@ const db = {
   Warehouse,
   Quote,
   Payroll,
+  EmploymentProfile,
+  LeavePolicy,
+  LeaveBalance,
+  PayPeriod,
+  PayrollRun,
+  Payslip,
+  PayrollDeduction,
+  Certification,
   sequelize,
   Sequelize,
 };

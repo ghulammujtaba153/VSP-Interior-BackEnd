@@ -22,11 +22,13 @@ export default (sequelize, DataTypes) => {
         allowNull: false
       },
       status: {
-        type: DataTypes.STRING,
+        type: DataTypes.ENUM('pending', 'approved', 'rejected', 'cancelled'),
         allowNull: false,
-        enum: ['pending', 'approved', 'rejected'],
-        defaultValue: 'pending'
+        defaultValue: 'pending',
       },
+      approvedById: { type: DataTypes.INTEGER, allowNull: true },
+      approvedAt: { type: DataTypes.DATE, allowNull: true },
+      rejectionReason: { type: DataTypes.STRING, allowNull: true },
       reason: {
         type: DataTypes.STRING,
         set(value) {

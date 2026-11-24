@@ -25,14 +25,18 @@ export default (sequelize, DataTypes) => {
         allowNull: true,
       },
       overWork: {
-        type: DataTypes.TIME, // assuming you want to store time worked overtime
+        type: DataTypes.TIME,
         allowNull: true,
         defaultValue: "00:00:00",
       },
+      breakMinutes: { type: DataTypes.INTEGER, defaultValue: 0 },
+      payPeriodId: { type: DataTypes.INTEGER, allowNull: true },
+      approvedById: { type: DataTypes.INTEGER, allowNull: true },
+      approvedAt: { type: DataTypes.DATE, allowNull: true },
       status: {
-        type: DataTypes.ENUM("pending", "approved", "rejected"),
+        type: DataTypes.ENUM("draft", "submitted", "pending", "approved", "rejected", "locked"),
         allowNull: false,
-        defaultValue: "pending",
+        defaultValue: "draft",
       },
     },
     {
@@ -45,6 +49,10 @@ export default (sequelize, DataTypes) => {
     EmployeeTimeSheet.belongsTo(models.User, {
       foreignKey: "employeeId",
       as: "employee",
+    });
+    EmployeeTimeSheet.belongsTo(models.PayPeriod, {
+      foreignKey: "payPeriodId",
+      as: "payPeriod",
     });
   };
 

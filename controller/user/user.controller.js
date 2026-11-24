@@ -1,7 +1,9 @@
 import db from '../../models/index.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { Op } from 'sequelize';
 import { sendEmail } from '../../service/mailService.js';
+import { isHrAdmin } from '../../utils/permissionUtils.js';
 
 const { User, Role, Permission, Resource, Audit, EmployeeTimeSheet, EmployeeLeave } = db;
 
@@ -116,22 +118,38 @@ export const getUserByToken = async (req, res) => {
 export const getUserById = async (req, res) => {
     try {
         const { id } = req.params;
-        const user = await User.findByPk(id);
-        res.status(200).json(user);
+        const user = await User.findByPk(id, {
+          attributes: { exclude: ['password'] },
+          include: [{ model: Role }],
+        });
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
+        res.status(200).json(user);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 }
 
 export const getUsers = async (req, res) => {
-    const { page = 1, limit = 10, sortBy = 'createdAt', order = 'DESC' } = req.query;
+    const { page = 1, limit = 10, sortBy = 'createdAt', order = 'DESC', search = '', hasSalary } = req.query;
     try {
         const offset = (page - 1) * limit;
-        
+        const where = {};
+
+        if (hasSalary === 'true') {
+            where.salary = { [Op.ne]: null };
+        }
+
+        if (search?.trim()) {
+            where[Op.or] = [
+                { name: { [Op.iLike]: `%${search}%` } },
+                { email: { [Op.iLike]: `%${search}%` } },
+            ];
+        }
+
         const { count, rows: users } = await User.findAndCountAll({
+            where,
             include: [
                 {
                     model: Role,
@@ -142,9 +160,10 @@ export const getUsers = async (req, res) => {
             },
             offset: parseInt(offset),
             limit: parseInt(limit),
-            order: [[sortBy, order.toUpperCase()]]
+            order: [[sortBy, order.toUpperCase()]],
+            distinct: true,
         });
-        res.status(200).json({ users, total: count });
+        res.status(200).json({ users, total: count, page: parseInt(page), limit: parseInt(limit) });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -159,29 +178,38 @@ export const updateUser = async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        
-        user.name = name;
-        user.email = email;
-        user.salary = salary || null;
-        
+
+        const hr = req.authUser && isHrAdmin(req.authUser);
+        const isSelf = req.authUser && Number(req.authUser.id) === Number(id);
+
+        if (!hr && !isSelf) {
+          return res.status(403).json({ error: 'Access denied' });
+        }
+
+        const oldData = user.get();
+
+        if (name !== undefined) user.name = name;
+        if (email !== undefined) user.email = email;
+
+        if (hr) {
+          user.salary = salary ?? user.salary;
+          if (role && !roleId) {
+            const roleRecord = await Role.findOne({ where: { name: role } });
+            if (roleRecord) user.roleId = roleRecord.id;
+          } else if (roleId) {
+            user.roleId = roleId;
+          }
+        }
+
         if (password) {
             const hashedPassword = await bcrypt.hash(password, 10);
             user.password = hashedPassword;
         }
-        
-        // Handle role - if role name is provided, find the role ID
-        if (role && !roleId) {
-            const roleRecord = await Role.findOne({ where: { name: role } });
-            if (roleRecord) {
-                user.roleId = roleRecord.id;
-            }
-        } else if (roleId) {
-            user.roleId = roleId;
-        }
 
         await user.save();
-        await Audit.create({ userId: user.id, action: 'update', tableName: 'users', oldData: user.get(), newData: req.body });
-        res.status(200).json(user);
+        await Audit.create({ userId: req.authUser?.id || user.id, action: 'update', tableName: 'users', oldData, newData: { name: user.name, email: user.email } });
+        const safeUser = await User.findByPk(id, { attributes: { exclude: ['password'] }, include: [{ model: Role }] });
+        res.status(200).json(safeUser);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -272,6 +300,14 @@ export const getStaffProfile = async (req, res) => {
           ],
         },
         {
+          model: db.EmploymentProfile,
+          as: "employmentProfile",
+        },
+        {
+          model: db.Worker,
+          as: "worker",
+        },
+        {
           model: EmployeeTimeSheet,
           as: "EmployeeTimeSheets",
           attributes: [
@@ -279,7 +315,7 @@ export const getStaffProfile = async (req, res) => {
             "date",
             "startTime",
             "endTime",
-            "breakTime",
+            "breakMinutes",
             "overWork",
             "status",
             "createdAt",
@@ -320,7 +356,9 @@ export const getStaffProfile = async (req, res) => {
           
           // Parse breakTime either as float ("1.5") or HH:MM string ("01:30")
           let breakAmount = 0;
-          if (ts.breakTime) {
+          if (ts.breakMinutes) {
+            breakAmount = Number(ts.breakMinutes) / 60;
+          } else if (ts.breakTime) {
             if (ts.breakTime.includes(':')) {
               const parts = ts.breakTime.split(":");
               const h = parseInt(parts[0], 10) || 0;

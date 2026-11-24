@@ -26,6 +26,7 @@ import employeeTimeSheetRouter from "./humanResource/employeeTimeSheet.routes.js
 import noticeRouter from "./humanResource/notice.routes.js";
 import employeeDocumentRouter from "./humanResource/employeeDocument.routes.js";
 import payrollRouter from "./humanResource/payroll.routes.js";
+import hrRouter from "./humanResource/hr.routes.js";
 import jobSchedulingRouter from "./project/jobScheduling/jobScheduling.routes.js";
 import projectKanbanRouter from "./project/jobScheduling/projectKanban.routes.js";
 // import projectGanttChartRouter from "./project/jobScheduling/projectGanttChart.routes.js";
@@ -65,6 +66,7 @@ router.use("/employee-timesheet", employeeTimeSheetRouter);
 router.use("/notices", noticeRouter);
 router.use("/employee-document", employeeDocumentRouter);
 router.use("/payroll", payrollRouter);
+router.use("/hr", hrRouter);
 router.use("/job-scheduling", jobSchedulingRouter);
 router.use("/project-kanban", projectKanbanRouter);
 // router.use("/project-gantt-chart", projectGanttChartRouter);

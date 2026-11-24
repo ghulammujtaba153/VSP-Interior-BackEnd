@@ -15,9 +15,21 @@ export const createPermission = async (req, res) => {
 
 export const getPermissions = async (req, res) => {
     try {
-        const permissions = await Permission.findAll({ order: [['createdAt', 'DESC']] });
+        const permissions = await Permission.findAll({
+            include: [
+                { model: Resource, attributes: ['id', 'name'] },
+                { model: Role, attributes: ['id', 'name'] }
+            ],
+            order: [['createdAt', 'DESC']]
+        });
 
-        res.status(200).json(permissions);
+        const response = permissions.map(permission => ({
+            ...permission.toJSON(),
+            resource: permission.Resource?.name || null,
+            role: permission.Role?.name || null
+        }));
+
+        res.status(200).json(response);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
